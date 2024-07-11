@@ -98,7 +98,9 @@ class BaseIndexingPolicy : public SimObject
 
   public:
 
-    std::vector<int> setsUsage;
+    std::vector<int> setsMergedBy;
+    std::vector<int> setsOccupiedBy;
+    std::vector<int> setsAllocated;
     std::vector<bool> setsIsMOrS;
 
     uint32_t getNumSets() const;

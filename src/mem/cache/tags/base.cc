@@ -81,13 +81,13 @@ BaseTags::setSetsIsMOrS(int _set) {
 }
 
 std::vector<int>
-BaseTags::getSetsUsage() {
-    return indexingPolicy->setsUsage;
+BaseTags::getSetsMergedBy() {
+    return indexingPolicy->setsMergedBy;
 }
 
 void
-BaseTags::setSetsUsage(int mSet, int sSet) {
-    indexingPolicy->setsUsage[mSet] = sSet;
+BaseTags::setSetsMergedBy(int mSet, int sSet) {
+    indexingPolicy->setsMergedBy[mSet] = sSet;
     indexingPolicy->setsIsMOrS[mSet] = true;
     indexingPolicy->setsIsMOrS[sSet] = true;
 }

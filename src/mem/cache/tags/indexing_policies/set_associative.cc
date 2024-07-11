@@ -89,8 +89,8 @@ SetAssociative::getPossibleEntries(const Addr addr, bool* isMerged) const
     std::vector<ReplaceableEntry*> candidates = sets[extractSet(addr)];
     std::string pName = name();
     if (pName.compare("system.l2.tags.indexing_policy") == 0) {
-        if (setsUsage[extractSet(addr)] != extractSet(addr)) {
-            for (const auto& blk : sets[setsUsage[extractSet(addr)]]) {
+        if (setsMergedBy[extractSet(addr)] != extractSet(addr)) {
+            for (const auto& blk : sets[setsMergedBy[extractSet(addr)]]) {
                 // Update victim entry if necessary
                 candidates.push_back(blk);
             }

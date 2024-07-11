@@ -65,12 +65,16 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
              "of 2");
     fatal_if(assoc <= 0, "associativity must be greater than zero");
 
-    setsUsage.resize(numSets);
+    setsMergedBy.resize(numSets);
+    setsOccupiedBy.resize(numSets);
+    setsAllocated.resize(numSets);
     setsIsMOrS.resize(numSets);
     // Make space for the entries
     for (uint32_t i = 0; i < numSets; ++i) {
         sets[i].resize(assoc);
-        setsUsage[i] = i;
+        setsMergedBy[i] = i;
+        setsOccupiedBy[i] = i;
+        setsAllocated[i] = 0;
         setsIsMOrS[i] = 0;
     }
 

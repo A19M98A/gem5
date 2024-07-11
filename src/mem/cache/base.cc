@@ -974,7 +974,7 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
         std::string pName = name();
         if (pName.compare("system.l2") == 0 && numberOfEvict % 1000 == 0) {
             std::vector<bool> setsIsMOrS = tags->getSetsIsMOrS();
-            std::vector<int> setsUsage = tags->getSetsUsage();
+            std::vector<int> setsMergedBy = tags->getSetsMergedBy();
             uint32_t numSets = tags->getNumSets();
             // uint32_t indexM = 0, indexS = numSets/2;
             for (int i = 0; i < numSets/2; i++) {
@@ -982,7 +982,7 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
                     for (int j = numSets/2; j < numSets; j++)
                     {
                         if (!setsIsMOrS[j]) {
-                            tags->setSetsUsage(i, j);
+                            tags->setSetsMergedBy(i, j);
                             setsIsMOrS[j] = true;
                             break;
                         }

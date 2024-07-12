@@ -75,7 +75,7 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
         setsMergedBy[i] = i;
         setsOccupiedBy[i] = i;
         setsAllocated[i] = 0;
-        setsIsMOrS[i] = 0;
+        setsIsMOrS[i] = false;
     }
 
     std::cout << name() << " -> set shift:" << setShift << std::endl;

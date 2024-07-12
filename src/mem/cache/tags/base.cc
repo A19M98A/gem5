@@ -85,6 +85,22 @@ BaseTags::getSetsMergedBy() {
     return indexingPolicy->setsMergedBy;
 }
 
+std::vector<int>
+BaseTags::getSetsAllocated() {
+    return indexingPolicy->setsAllocated;
+}
+
+void
+BaseTags::updateSetsAllocated(int _set, int value) {
+    indexingPolicy->setsAllocated[_set] += value;
+}
+
+void
+BaseTags::resetSetsAllocated() {
+    for (int i = 0; i < getNumSets(); i++)
+        indexingPolicy->setsAllocated[i] = 0;
+}
+
 void
 BaseTags::setSetsMergedBy(int mSet, int sSet) {
     indexingPolicy->setsMergedBy[mSet] = sSet;
@@ -160,7 +176,8 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
     // We only need to write into one tag and one data block.
     stats.tagAccesses += 1;
     stats.dataAccesses += 1;
-    stats.mergedSetAccesses++;
+    // NOTE: check why add this line?
+    // stats.mergedSetAccesses++;
 }
 
 void

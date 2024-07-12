@@ -173,6 +173,9 @@ class BaseTags : public ClockedObject
     std::vector<bool> getSetsIsMOrS();
     void setSetsIsMOrS(int _set);
     std::vector<int> getSetsMergedBy();
+    std::vector<int> getSetsAllocated();
+    void updateSetsAllocated(int _set, int value);
+    void resetSetsAllocated();
     void setSetsMergedBy(int mSet, int sSet);
     uint32_t getNumSets();
 

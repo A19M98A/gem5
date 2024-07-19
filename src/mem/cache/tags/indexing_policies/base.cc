@@ -80,6 +80,13 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
 
     std::cout << name() << " -> set shift:" << setShift << std::endl;
     std::cout << name() << " -> tag shift:" << tagShift << std::endl;
+    std::cout << name() << " -> numSets:" << numSets << std::endl;
+    std::cout << name() << " -> assoc:" << assoc << std::endl;
+}
+
+int
+BaseIndexingPolicy::getAssoc() {
+    return assoc;
 }
 
 uint32_t

@@ -971,52 +971,17 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
         stats.replacements++;
         numberOfEvict++;
         std::string pName = name();
-        if (pName.compare("system.l2") == 0 && numberOfEvict % 17798 == 0) {
-            std::vector<bool> setsIsMOrS = tags->getSetsIsMOrS();
-            std::vector<int> setsMergedBy = tags->getSetsMergedBy();
-            std::vector<int> setsAllocated = tags->getSetsAllocated();
-            uint32_t numSets = tags->getNumSets();
-            // uint32_t indexM = 0, indexS = numSets/2;
-            for (int i = 0; i < numSets/2; i++) {
-                if (setsAllocated[i] >= 10 && !setsIsMOrS[i]) {
-                    for (int j = numSets/2; j < numSets; j++)
-                    {
-                        if (setsAllocated[j] < 10 && !setsIsMOrS[j]) {
-                            tags->setSetsMergedBy(i, j);
-                            tags->setSetsIsMOrS(i);
-                            tags->setSetsIsMOrS(j);
-                            setsIsMOrS[i] = true;
-                            setsIsMOrS[j] = true;
-                            std::cout << "merged " << i;
-                            std::cout << " by " << j << std::endl;
-                            break;
-                        }
-                    }
-                }
-                std::cout << "set[" << i << "] = ";
-                std::cout << setsAllocated[i] << std::endl;
-            }
-            for (int i = numSets; i < numSets; i++) {
-                if (setsAllocated[i] >= 10 && !setsIsMOrS[i]) {
-                    for (int j = 0; j < numSets/2; j++)
-                    {
-                        if (setsAllocated[j] < 10 && !setsIsMOrS[j]) {
-                            tags->setSetsMergedBy(i, j);
-                            tags->setSetsIsMOrS(i);
-                            tags->setSetsIsMOrS(j);
-                            setsIsMOrS[i] = true;
-                            setsIsMOrS[j] = true;
-                            std::cout << "merged " << i;
-                            std::cout << " by " << j << std::endl;
-                            break;
-                        }
-                    }
-                }
-            }
+        if (pName.compare("system.l2") == 0 && numberOfEvict % 1000 == 0) {
+            tags->setSetsMerged();
+            tags->printSetsAllocated();
+            tags->resetSetsAllocated();
         }
         // Evict valid blocks associated to this victim block
         for (auto& blk : evict_blks) {
             if (blk->isValid()) {
+                if (pName.compare("system.l2") == 0 && !blk->is_occupied) {
+                    tags->setSetsUnmerged(blk->getSet());
+                }
                 evictBlock(blk, writebacks);
             }
         }
@@ -1720,9 +1685,6 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
 
-    if (victim) {
-        std::string pName = name();
-    }
     return victim;
 }
 

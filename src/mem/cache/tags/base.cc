@@ -75,14 +75,19 @@ BaseTags::getSetsIsMOrS() {
     return indexingPolicy->setsIsMOrS;
 }
 
-void
-BaseTags::setSetsIsMOrS(int _set) {
-    indexingPolicy->setsIsMOrS[_set] = true;
-}
-
 std::vector<int>
 BaseTags::getSetsMergedBy() {
     return indexingPolicy->setsMergedBy;
+}
+
+std::vector<int>
+BaseTags::getSetsOccupiedBy() {
+    return indexingPolicy->setsOccupiedBy;
+}
+
+int
+BaseTags::getAssoc() {
+    return indexingPolicy->getAssoc();
 }
 
 std::vector<int>
@@ -100,12 +105,85 @@ BaseTags::resetSetsAllocated() {
     for (int i = 0; i < getNumSets(); i++)
         indexingPolicy->setsAllocated[i] = 0;
 }
+void
+BaseTags::printSetsAllocated() {
+    std::cout << "{";
+    for (int i = 0; i < getNumSets(); i++) {
+        std::cout << "\"" << i << "\":";
+        std::cout << indexingPolicy->setsAllocated[i];
+        std::cout << ", ";
+    }
+    std::cout << "\"-1\":0}"  << std::endl;
+}
 
 void
-BaseTags::setSetsMergedBy(int mSet, int sSet) {
-    indexingPolicy->setsMergedBy[mSet] = sSet;
-    indexingPolicy->setsIsMOrS[mSet] = true;
-    indexingPolicy->setsIsMOrS[sSet] = true;
+BaseTags::setSetsMerged() {
+    uint32_t numSets = indexingPolicy->getNumSets();
+    for (int i = 0; i < numSets/2; i++) {
+        if (indexingPolicy->setsAllocated[i] >= 3 &&
+            indexingPolicy->setsAllocated[i] <= 5 &&
+            !indexingPolicy->setsIsMOrS[i]) {
+            for (int j = numSets/2; j < numSets; j++)
+            {
+                if (indexingPolicy->setsAllocated[j] < 3 &&
+                    !indexingPolicy->setsIsMOrS[j]) {
+                    indexingPolicy->setsMergedBy[i] = j;
+                    indexingPolicy->setsOccupiedBy[j] = i;
+                    indexingPolicy->setsIsMOrS[i] = true;
+                    indexingPolicy->setsIsMOrS[j] = true;
+                    break;
+                }
+            }
+        }
+    }
+    for (int i = numSets; i < numSets; i++) {
+        if (indexingPolicy->setsAllocated[i] >= 3 &&
+            indexingPolicy->setsAllocated[i] <= 5 &&
+            !indexingPolicy->setsIsMOrS[i]) {
+            for (int j = 0; j < numSets/2; j++)
+            {
+                if (indexingPolicy->setsAllocated[j] < 3 &&
+                    !indexingPolicy->setsIsMOrS[j]) {
+                    indexingPolicy->setsMergedBy[i] = j;
+                    indexingPolicy->setsOccupiedBy[j] = i;
+                    indexingPolicy->setsIsMOrS[i] = true;
+                    indexingPolicy->setsIsMOrS[j] = true;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void
+BaseTags::setSetsUnmerged(int sSet) {
+    int mSet = indexingPolicy->setsOccupiedBy[sSet];
+    if (indexingPolicy->setsIsMOrS[sSet]) {
+        if (indexingPolicy->setsAllocated[mSet] < 2) {
+            bool noOccupied = true;
+            for (int i = 0; i < indexingPolicy->getAssoc(); i++) {
+                ReplaceableEntry* entry = findBlockBySetAndWay(sSet, i);
+                CacheBlk* _blk = static_cast<CacheBlk*>(entry);
+                if (_blk != nullptr) {
+                    if (_blk->is_occupied || !_blk->isValid()) {
+                        noOccupied = false;
+                        break;
+                    }
+                }
+            }
+            if (noOccupied) {
+                indexingPolicy->setsOccupiedBy[sSet] = sSet;
+                indexingPolicy->setsMergedBy[mSet] = mSet;
+                indexingPolicy->setsIsMOrS[sSet] = false;
+                indexingPolicy->setsIsMOrS[mSet] = false;
+            }
+        }
+    }
+}
+
+uint32_t
+BaseTags::pubExtractSet(Addr addr) {
+    return indexingPolicy->pubExtractSet(addr);
 }
 
 uint32_t

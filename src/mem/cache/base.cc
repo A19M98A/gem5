@@ -1691,6 +1691,9 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
 void
 BaseCache::invalidateBlock(CacheBlk *blk)
 {
+    if (blk->is_occupied) {
+        tags->reduceSetsOccupied(blk->getSet());
+    }
     blk->originalSet = blk->getSet();
     blk->is_occupied = false;
 

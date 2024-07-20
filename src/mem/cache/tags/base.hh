@@ -181,6 +181,9 @@ class BaseTags : public ClockedObject
     void printSetsAllocated();
     void setSetsMerged();
     void setSetsUnmerged(int mSet);
+    bool setIsClean(int set);
+    void increaseSetsOccupied(int set);
+    void reduceSetsOccupied(int set);
     uint32_t pubExtractSet(Addr addr);
     uint32_t getNumSets();
 

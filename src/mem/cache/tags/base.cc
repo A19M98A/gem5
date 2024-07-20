@@ -158,7 +158,7 @@ BaseTags::setSetsMerged() {
 void
 BaseTags::setSetsUnmerged(int sSet) {
     int mSet = indexingPolicy->setsOccupiedBy[sSet];
-    if (indexingPolicy->setsIsMOrS[sSet]) {
+    if (indexingPolicy->setsIsMOrS[sSet] && setIsClean(sSet)) {
         if (indexingPolicy->setsAllocated[mSet] < 2) {
             bool noOccupied = true;
             for (int i = 0; i < indexingPolicy->getAssoc(); i++) {
@@ -189,6 +189,21 @@ BaseTags::pubExtractSet(Addr addr) {
 uint32_t
 BaseTags::getNumSets() {
     return indexingPolicy->getNumSets();
+}
+
+bool
+BaseTags::setIsClean(int set) {
+    return indexingPolicy->setsNumOccupied[set] == 0;
+}
+
+void
+BaseTags::increaseSetsOccupied(int set) {
+    indexingPolicy->setsNumOccupied[set]++;
+}
+
+void
+BaseTags::reduceSetsOccupied(int set) {
+    indexingPolicy->setsNumOccupied[set]--;
 }
 
 ReplaceableEntry*
@@ -241,8 +256,16 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
                 pkt->req->taskId());
 
     if (indexingPolicy->pubExtractSet(pkt->getAddr()) != blk->getSet()) {
+        panic_if(indexingPolicy->setsMergedBy[
+                indexingPolicy->pubExtractSet(pkt->getAddr())]
+                == blk->getSet(),
+                "%x try to occupied the set[%x] that not merged by %x",
+                pkt->getAddr(), blk->getSet(),
+                indexingPolicy->pubExtractSet(pkt->getAddr()));
+
         blk->is_occupied = true;
         blk->originalSet = indexingPolicy->pubExtractSet(pkt->getAddr());
+        increaseSetsOccupied(blk->getSet());
     }
 
     // Check if cache warm up is done

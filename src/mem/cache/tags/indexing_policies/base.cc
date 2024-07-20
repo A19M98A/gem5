@@ -69,6 +69,7 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
     setsOccupiedBy.resize(numSets);
     setsAllocated.resize(numSets);
     setsIsMOrS.resize(numSets);
+    setsNumOccupied.resize(numSets);
     // Make space for the entries
     for (uint32_t i = 0; i < numSets; ++i) {
         sets[i].resize(assoc);
@@ -76,6 +77,7 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
         setsOccupiedBy[i] = i;
         setsAllocated[i] = 0;
         setsIsMOrS[i] = false;
+        setsNumOccupied[i] = 0;
     }
 
     std::cout << name() << " -> set shift:" << setShift << std::endl;

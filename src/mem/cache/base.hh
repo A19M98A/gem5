@@ -104,6 +104,7 @@ class BaseCache : public ClockedObject
     };
 
     uint64_t numberOfEvict = 0;
+    uint64_t numberOfWrite = 0;
 
   public:
     /**

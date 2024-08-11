@@ -148,6 +148,12 @@ CoherentXBar::init()
 bool
 CoherentXBar::recvTimingReq(PacketPtr pkt, PortID cpu_side_port_id)
 {
+    // std::cout << name() << " -> [Req] isRead:" << pkt->isRead();
+    // std::cout << ", isWrite:" << pkt->isWrite();
+    // std::cout << ", isEviction:" << pkt->isEviction();
+    // std::cout << ", isCleanEviction:" << pkt->isCleanEviction();
+    // std::cout << ", addr:" << std::hex << pkt->getAddr();
+    // std::cout << std::endl;
     // determine the source port based on the id
     ResponsePort *src_port = cpuSidePorts[cpu_side_port_id];
 
@@ -446,6 +452,12 @@ CoherentXBar::recvTimingReq(PacketPtr pkt, PortID cpu_side_port_id)
 bool
 CoherentXBar::recvTimingResp(PacketPtr pkt, PortID mem_side_port_id)
 {
+    // std::cout << name() << " -> [Resp] isRead:" << pkt->isRead();
+    // std::cout << ", isWrite:" << pkt->isWrite();
+    // std::cout << ", isEviction:" << pkt->isEviction();
+    // std::cout << ", isCleanEviction:" << pkt->isCleanEviction();
+    // std::cout << ", addr:" << std::hex << pkt->getAddr();
+    // std::cout << std::endl;
     // determine the source port based on the id
     RequestPort *src_port = memSidePorts[mem_side_port_id];
 

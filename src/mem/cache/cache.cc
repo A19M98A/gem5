@@ -226,6 +226,10 @@ Cache::doWritebacks(PacketList& writebacks, Tick forward_time)
             // below.
             allocateWriteBuffer(wbPkt, forward_time);
         }
+        std::string pName = name();
+        if (pName.compare("system.l2") == 0) {
+            tags->setSetsUnmerged(tags->pubExtractSet(wbPkt->getAddr()));
+        }
         writebacks.pop_front();
     }
 }

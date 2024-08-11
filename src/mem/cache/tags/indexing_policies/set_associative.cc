@@ -75,6 +75,10 @@ SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
 {
     CacheBlk* blk = (CacheBlk*)entry;
     if (blk->is_occupied) {
+        Addr addr = (tag << tagShift) | (blk->originalSet << setShift);
+        panic_if(setsOccupiedBy[blk->getSet()] == blk->getSet(),
+                "%x mark as occupied but set[%x] that not merged.",
+                addr, blk->getSet());
         return (tag << tagShift) | (blk->originalSet << setShift);
     } else {
         return (tag << tagShift) | (entry->getSet() << setShift);
@@ -95,8 +99,12 @@ SetAssociative::getPossibleEntries(const Addr addr, bool* isMerged) const
                 candidates.push_back(blk);
             }
             *isMerged = true;
+            // std::cout << name() << " -> return 8 block for addr:";
+            // std::cout << std::hex << addr << std::endl;
         } else {
             *isMerged = false;
+            // std::cout << name() << " -> return 4 block for addr:";
+            // std::cout << std::hex << addr << std::endl;
         }
     }
     return candidates;

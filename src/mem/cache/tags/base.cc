@@ -131,6 +131,10 @@ BaseTags::setSetsMerged() {
                     indexingPolicy->setsOccupiedBy[j] = i;
                     indexingPolicy->setsIsMOrS[i] = true;
                     indexingPolicy->setsIsMOrS[j] = true;
+                    std::cout << "+ merged " << std::hex << i;
+                    std::cout << " by " << std::hex << j;
+                    std::cout << ", at:" << curTick();
+                    std::cout << std::endl;
                     break;
                 }
             }
@@ -148,6 +152,10 @@ BaseTags::setSetsMerged() {
                     indexingPolicy->setsOccupiedBy[j] = i;
                     indexingPolicy->setsIsMOrS[i] = true;
                     indexingPolicy->setsIsMOrS[j] = true;
+                    std::cout << "+ merged " << std::hex << i;
+                    std::cout << " by " << std::hex << j;
+                    std::cout << ", at:" << curTick();
+                    std::cout << std::endl;
                     break;
                 }
             }
@@ -158,7 +166,7 @@ BaseTags::setSetsMerged() {
 void
 BaseTags::setSetsUnmerged(int sSet) {
     int mSet = indexingPolicy->setsOccupiedBy[sSet];
-    if (indexingPolicy->setsIsMOrS[sSet] && setIsClean(sSet)) {
+    if (indexingPolicy->setsIsMOrS[sSet] && setIsClean(sSet) && mSet != sSet) {
         if (indexingPolicy->setsAllocated[mSet] < 2) {
             bool noOccupied = true;
             for (int i = 0; i < indexingPolicy->getAssoc(); i++) {
@@ -176,6 +184,10 @@ BaseTags::setSetsUnmerged(int sSet) {
                 indexingPolicy->setsMergedBy[mSet] = mSet;
                 indexingPolicy->setsIsMOrS[sSet] = false;
                 indexingPolicy->setsIsMOrS[mSet] = false;
+                std::cout << "- unmerged " << std::hex << sSet;
+                std::cout << " from " << std::hex << mSet;
+                std::cout << ", at:" << curTick();
+                std::cout << std::endl;
             }
         }
     }
@@ -230,7 +242,24 @@ BaseTags::findBlock(Addr addr, bool is_secure, bool* isMerged)
         if (blk->matchTag(tag, is_secure,
             blk->getSet() != set,
             blk->is_occupied)) {
+            // std::string pName = name();
+            // if (pName.compare("system.l2.tags") == 0) {
+            //     std::cout << name() << " -> tag of:";
+            //     std::cout << std::hex << regenerateBlkAddr(blk);
+            //     std::cout << " matched by:" << std::hex << addr;
+            //     std::cout << ", at set[" << std::hex << blk->getSet();
+            //     std::cout << "]" << std::endl;
+            // }
             return blk;
+        } else {
+            // std::string pName = name();
+            // if (pName.compare("system.l2.tags") == 0) {
+            //     std::cout << name() << " -> tag of:";
+            //     std::cout << std::hex << regenerateBlkAddr(blk);
+            //     std::cout << " not matched by:" << std::hex << addr;
+            //     std::cout << ", at set[" << std::hex << blk->getSet();
+            //     std::cout << "]" << std::endl;
+            // }
         }
     }
 
@@ -242,6 +271,23 @@ void
 BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
 {
     assert(!blk->isValid());
+
+    // // calculate temp
+    // int numberOfChange = 0;
+    // // calculate number of change:
+    // numberOfChange = 12;
+
+    uint32_t deltaTime = ((uint32_t) curTick() - blk->lastTempUpdate) / 1000;
+    if (deltaTime < 10) {
+        blk->temperature = 135;
+    } else if (deltaTime < 20) {
+        blk->temperature = 135;
+    } else if (deltaTime < 30) {
+        blk->temperature = 95;
+    } else {
+        blk->temperature = 85;
+    }
+    blk->lastTempUpdate = curTick();
 
     // Previous block, if existed, has been removed, and now we have
     // to insert the new one
@@ -258,7 +304,7 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
     if (indexingPolicy->pubExtractSet(pkt->getAddr()) != blk->getSet()) {
         panic_if(indexingPolicy->setsMergedBy[
                 indexingPolicy->pubExtractSet(pkt->getAddr())]
-                == blk->getSet(),
+                != blk->getSet(),
                 "%x try to occupied the set[%x] that not merged by %x",
                 pkt->getAddr(), blk->getSet(),
                 indexingPolicy->pubExtractSet(pkt->getAddr()));

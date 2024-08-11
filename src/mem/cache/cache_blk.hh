@@ -112,6 +112,9 @@ class CacheBlk : public TaggedEntry
 
     Addr originalSet = 0;
 
+    uint32_t temperature = 85;
+    Tick lastTempUpdate = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

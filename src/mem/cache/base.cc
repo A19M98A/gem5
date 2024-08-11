@@ -777,6 +777,39 @@ void
 BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
     bool has_old_data)
 {
+    numberOfWrite++;
+    // // calculate temp
+    // int numberOfChange = 0;
+    // // calculate number of change:
+    // numberOfChange = 12;
+
+    uint32_t deltaTime = ((uint32_t) curTick() - blk->lastTempUpdate) / 1000;
+    if (deltaTime < 10) {
+        blk->temperature = 135;
+    } else if (deltaTime < 20) {
+        blk->temperature = 135;
+    } else if (deltaTime < 30) {
+        blk->temperature = 95;
+    } else {
+        blk->temperature = 85;
+    }
+    blk->lastTempUpdate = curTick();
+
+    if (numberOfWrite == 1000) {
+        std::cout << "{";
+        for (int i = 0; i < tags->getNumSets(); i++) {
+            for (int j = 0; j < tags->getAssoc(); j++) {
+                std::cout << "\"" << i << "-" << j << "\":";
+                CacheBlk* tempBlk = static_cast<CacheBlk*>(
+                    tags->findBlockBySetAndWay(i, j));
+
+                std::cout << tempBlk->temperature << ",";
+            }
+        }
+        std::cout << "\"-1\":0}" << std::endl;
+        numberOfWrite = 0;
+    }
+
     DataUpdate data_update(regenerateBlkAddr(blk), blk->isSecure());
     if (ppDataUpdate->hasListeners()) {
         if (has_old_data) {
@@ -979,9 +1012,6 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
         // Evict valid blocks associated to this victim block
         for (auto& blk : evict_blks) {
             if (blk->isValid()) {
-                if (pName.compare("system.l2") == 0 && !blk->is_occupied) {
-                    tags->setSetsUnmerged(blk->getSet());
-                }
                 evictBlock(blk, writebacks);
             }
         }
@@ -1720,6 +1750,11 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     PacketPtr pkt = evictBlock(blk);
     if (pkt) {
         writebacks.push_back(pkt);
+    } else {
+        std::string pName = name();
+        if (pName.compare("system.l2") == 0) {
+            tags->setSetsUnmerged(blk->getSet());
+        }
     }
 }
 

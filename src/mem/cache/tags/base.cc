@@ -77,7 +77,7 @@ BaseTags::findBlockBySetAndWay(int set, int way) const
 }
 
 CacheBlk*
-BaseTags::findBlock(Addr addr, bool is_secure) const
+BaseTags::findBlock(Addr addr, Addr originAddr, bool is_secure) const
 {
     // Extract block tag
     Addr tag = extractTag(addr);

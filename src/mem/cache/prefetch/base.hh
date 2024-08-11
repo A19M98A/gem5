@@ -308,12 +308,12 @@ class Base : public ClockedObject
     bool observeAccess(const PacketPtr &pkt, bool miss) const;
 
     /** Determine if address is in cache */
-    bool inCache(Addr addr, bool is_secure) const;
+    bool inCache(Addr addr, Addr originAddr, bool is_secure) const;
 
     /** Determine if address is in cache miss queue */
     bool inMissQueue(Addr addr, bool is_secure) const;
 
-    bool hasBeenPrefetched(Addr addr, bool is_secure) const;
+    bool hasBeenPrefetched(Addr addr, Addr originAddr, bool is_secure) const;
 
     /** Determine if addresses are on the same page */
     bool samePage(Addr a, Addr b) const;

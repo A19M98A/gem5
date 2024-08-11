@@ -1201,7 +1201,9 @@ class BaseCache : public ClockedObject
         }
 
         WriteQueueEntry *wq_entry =
-            writeBuffer.findMatch(blk_addr, pkt->isSecure());
+            writeBuffer.findMatch(blk_addr,
+                                  pkt->getOriginAddr(),
+                                  pkt->isSecure());
         if (wq_entry && !wq_entry->inService) {
             DPRINTF(Cache, "Potential to merge writeback %s", pkt->print());
         }
@@ -1272,12 +1274,12 @@ class BaseCache : public ClockedObject
         memSidePort.schedSendEvent(time);
     }
 
-    bool inCache(Addr addr, bool is_secure) const {
-        return tags->findBlock(addr, is_secure);
+    bool inCache(Addr addr, Addr originAddr, bool is_secure) const {
+        return tags->findBlock(addr, originAddr, is_secure);
     }
 
-    bool hasBeenPrefetched(Addr addr, bool is_secure) const {
-        CacheBlk *block = tags->findBlock(addr, is_secure);
+    bool hasBeenPrefetched(Addr addr, Addr originAddr, bool is_secure) const {
+        CacheBlk *block = tags->findBlock(addr, originAddr, is_secure);
         if (block) {
             return block->wasPrefetched();
         } else {

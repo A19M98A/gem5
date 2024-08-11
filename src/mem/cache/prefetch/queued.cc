@@ -210,7 +210,9 @@ Queued::notify(const PacketPtr &pkt, const PrefetchInfo &pfi)
         if (!samePage(addr_prio.first, pfi.getAddr())) {
             statsQueued.pfSpanPage += 1;
 
-            if (hasBeenPrefetched(pkt->getAddr(), pkt->isSecure())) {
+            if (hasBeenPrefetched(pkt->getAddr(),
+                                  pkt->getOriginAddr(),
+                                  pkt->isSecure())) {
                 statsQueued.pfUsefulSpanPage += 1;
             }
         }
@@ -315,7 +317,8 @@ Queued::translationComplete(DeferredPacket *dp, bool failed)
                 it->translationRequest->getPaddr());
         Addr target_paddr = it->translationRequest->getPaddr();
         // check if this prefetch is already redundant
-        if (cacheSnoop && (inCache(target_paddr, it->pfInfo.isSecure()) ||
+        //! TODO: check how can access to the original address.
+        if (cacheSnoop && (inCache(target_paddr, 0, it->pfInfo.isSecure()) ||
                     inMissQueue(target_paddr, it->pfInfo.isSecure()))) {
             statsQueued.pfInCache++;
             DPRINTF(HWPrefetch, "Dropping redundant in "
@@ -451,7 +454,7 @@ Queued::insert(const PacketPtr &pkt, PrefetchInfo &new_pfi,
         }
     }
     if (has_target_pa && cacheSnoop &&
-            (inCache(target_paddr, new_pfi.isSecure()) ||
+            (inCache(target_paddr, pkt->getOriginAddr(), new_pfi.isSecure()) ||
             inMissQueue(target_paddr, new_pfi.isSecure()))) {
         statsQueued.pfInCache++;
         DPRINTF(HWPrefetch, "Dropping redundant in "

@@ -390,6 +390,9 @@ class Packet : public Printable, public Extensible<Packet>
     /// physical, depending on the system configuration.
     Addr addr;
 
+    /// @brief The address of request without any aligned.
+    Addr originAddr;
+
     /// True if the request targets the secure memory space.
     bool _isSecure;
 
@@ -805,6 +808,13 @@ class Packet : public Printable, public Extensible<Packet>
     void copyError(Packet *pkt) { assert(pkt->isError()); cmd = pkt->cmd; }
 
     Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
+
+    Addr getOriginAddr() const {
+        assert(flags.isSet(VALID_ADDR));
+        return originAddr;
+    }
+
+    void setOriginAddr(Addr addr) { originAddr = addr; }
     /**
      * Update the address of this packet mid-transaction. This is used
      * by the address mapper to change an already set address to a new

@@ -108,6 +108,18 @@ class CacheBlk : public TaggedEntry
      */
     Tick whenReady = 0;
 
+    /**
+     * @brief start address of the data that stor in this blk
+     *
+     */
+    Addr startAddr = 0;
+
+    /**
+     * @brief size of the data that stor in this blk
+     *
+     */
+    uint8_t dataSize = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

@@ -115,6 +115,8 @@ class QueueEntry : public Packet::SenderState, public Named
     /** Block aligned address. */
     Addr blkAddr;
 
+    Addr originBlkAddr;
+
     /** Block size of the cache. */
     unsigned blkSize;
 

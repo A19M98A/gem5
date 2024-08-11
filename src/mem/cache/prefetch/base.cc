@@ -165,7 +165,9 @@ Base::observeAccess(const PacketPtr &pkt, bool miss) const
 
     if (!miss) {
         if (prefetchOnPfHit)
-            return hasBeenPrefetched(pkt->getAddr(), pkt->isSecure());
+            return hasBeenPrefetched(pkt->getAddr(),
+                                     pkt->getOriginAddr(),
+                                     pkt->isSecure());
         if (!prefetchOnAccess)
             return false;
     }
@@ -185,9 +187,9 @@ Base::observeAccess(const PacketPtr &pkt, bool miss) const
 }
 
 bool
-Base::inCache(Addr addr, bool is_secure) const
+Base::inCache(Addr addr, Addr originAddr, bool is_secure) const
 {
-    return cache->inCache(addr, is_secure);
+    return cache->inCache(addr, originAddr, is_secure);
 }
 
 bool
@@ -197,9 +199,9 @@ Base::inMissQueue(Addr addr, bool is_secure) const
 }
 
 bool
-Base::hasBeenPrefetched(Addr addr, bool is_secure) const
+Base::hasBeenPrefetched(Addr addr, Addr originAddr, bool is_secure) const
 {
-    return cache->hasBeenPrefetched(addr, is_secure);
+    return cache->hasBeenPrefetched(addr, originAddr, is_secure);
 }
 
 bool
@@ -250,7 +252,9 @@ Base::probeNotify(const PacketPtr &pkt, bool miss)
         panic("Request must have a physical address");
     }
 
-    if (hasBeenPrefetched(pkt->getAddr(), pkt->isSecure())) {
+    if (hasBeenPrefetched(pkt->getAddr(),
+                          pkt->getOriginAddr(),
+                          pkt->isSecure())) {
         usefulPrefetches += 1;
         prefetchStats.pfUseful++;
         if (miss)

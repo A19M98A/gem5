@@ -79,7 +79,8 @@ STeMS::checkForActiveGenerationsEnd()
                 if (seq_entry.counter > 0) {
                     Addr cache_addr =
                         agt_entry.paddress + seq_entry.offset * blkSize;
-                    if (!inCache(cache_addr, sr_is_secure) &&
+                    //! TODO: check how can access to the original address.
+                    if (!inCache(cache_addr, 0, sr_is_secure) &&
                             !inMissQueue(cache_addr, sr_is_secure)) {
                         generation_ended = true;
                         pst_addr = (agt_entry.pc << spatialRegionSizeBits)

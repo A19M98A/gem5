@@ -196,7 +196,9 @@ class BaseTags : public ClockedObject
      * @param is_secure True if the target memory space is secure.
      * @return Pointer to the cache block.
      */
-    virtual CacheBlk *findBlock(Addr addr, bool is_secure) const;
+    virtual CacheBlk *findBlock(Addr addr,
+                                Addr originAddr,
+                                bool is_secure) const;
 
     /**
      * Find a block given set and way.

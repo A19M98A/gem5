@@ -55,11 +55,12 @@ AssociativeSet<Entry>::AssociativeSet(int assoc, int num_entries,
 
 template<class Entry>
 Entry*
-AssociativeSet<Entry>::findEntry(Addr addr, bool is_secure) const
+AssociativeSet<Entry>::findEntry(Addr addr, bool is_secure, uint8_t type)
+                                                                    const
 {
     Addr tag = indexingPolicy->extractTag(addr);
     const std::vector<ReplaceableEntry*> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, type);
 
     for (const auto& location : selected_entries) {
         Entry* entry = static_cast<Entry *>(location);
@@ -80,11 +81,11 @@ AssociativeSet<Entry>::accessEntry(Entry *entry)
 
 template<class Entry>
 Entry*
-AssociativeSet<Entry>::findVictim(Addr addr)
+AssociativeSet<Entry>::findVictim(Addr addr, uint8_t type)
 {
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, type);
     Entry* victim = static_cast<Entry*>(replacementPolicy->getVictim(
                             selected_entries));
     // There is only one eviction for this replacement
@@ -95,10 +96,11 @@ AssociativeSet<Entry>::findVictim(Addr addr)
 
 template<class Entry>
 std::vector<Entry *>
-AssociativeSet<Entry>::getPossibleEntries(const Addr addr) const
+AssociativeSet<Entry>::getPossibleEntries(const Addr addr,
+                                          const uint8_t type) const
 {
     std::vector<ReplaceableEntry *> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, type);
     std::vector<Entry *> entries(selected_entries.size(), nullptr);
 
     unsigned int idx = 0;

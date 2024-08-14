@@ -104,11 +104,12 @@ CompressedTags::tagsInit()
 CacheBlk*
 CompressedTags::findVictim(Addr addr, const bool is_secure,
                            const std::size_t compressed_size,
-                           std::vector<CacheBlk*>& evict_blks)
+                           std::vector<CacheBlk*>& evict_blks,
+                           const uint8_t type)
 {
     // Get all possible locations of this superblock
     const std::vector<ReplaceableEntry*> superblock_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, type);
 
     // Check if the superblock this address belongs to has been allocated. If
     // so, try co-allocating

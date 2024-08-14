@@ -146,7 +146,8 @@ class BaseIndexingPolicy : public SimObject
      * @param addr The addr to a find possible entries for.
      * @return The possible entries.
      */
-    virtual std::vector<ReplaceableEntry*> getPossibleEntries(const Addr addr)
+    virtual std::vector<ReplaceableEntry*> getPossibleEntries(const Addr addr,
+                                                           const uint8_t type)
                                                                     const = 0;
 
     /**

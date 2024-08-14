@@ -70,9 +70,20 @@ SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
 }
 
 std::vector<ReplaceableEntry*>
-SetAssociative::getPossibleEntries(const Addr addr) const
+SetAssociative::getPossibleEntries(const Addr addr, const uint8_t type) const
 {
-    return sets[extractSet(addr)];
+    if (type != 0) {
+        std::vector<ReplaceableEntry*> sector_entries;
+        for (const auto& blk : sets[extractSet(addr)]) {
+            // Update victim entry if necessary
+            if ((blk->getWay() + 4)/4 == type) {
+                sector_entries.push_back(blk);
+            }
+        }
+        return sector_entries;
+    } else {
+        return sets[extractSet(addr)];
+    }
 }
 
 } // namespace gem5

@@ -393,6 +393,8 @@ class Packet : public Printable, public Extensible<Packet>
     /// @brief The address of request without any aligned.
     Addr originAddr;
 
+    uint8_t destination;
+
     /// True if the request targets the secure memory space.
     bool _isSecure;
 
@@ -815,6 +817,15 @@ class Packet : public Printable, public Extensible<Packet>
     }
 
     void setOriginAddr(Addr addr) { originAddr = addr; }
+
+    uint8_t getDestination() {
+        return destination;
+    }
+
+    void setDestination(uint8_t _destination) {
+        destination = _destination;
+    }
+
     /**
      * Update the address of this packet mid-transaction. This is used
      * by the address mapper to change an already set address to a new

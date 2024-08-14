@@ -207,7 +207,8 @@ SkewedAssociative::regenerateAddr(const Addr tag,
 }
 
 std::vector<ReplaceableEntry*>
-SkewedAssociative::getPossibleEntries(const Addr addr) const
+SkewedAssociative::getPossibleEntries(const Addr addr,
+                                      const uint8_t type) const
 {
     std::vector<ReplaceableEntry*> entries;
 

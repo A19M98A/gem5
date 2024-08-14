@@ -84,7 +84,7 @@ BaseTags::findBlock(Addr addr, Addr originAddr, bool is_secure) const
 
     // Find possible entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, 0);
 
     // Search for block
     for (const auto& location : entries) {

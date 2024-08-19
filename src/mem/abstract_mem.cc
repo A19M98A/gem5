@@ -66,6 +66,9 @@ AbstractMemory::AbstractMemory(const Params &p) :
     kvmMap(p.kvm_map), writeable(p.writeable), _system(NULL),
     stats(*this)
 {
+    for (int i = 0; i < 536870912; i++) {
+        pmemHisAddr[i] = 0;
+    }
     panic_if(!range.valid() || !range.size(),
              "Memory range %s must be valid with non-zero size.",
              range.to_string());
@@ -437,6 +440,9 @@ AbstractMemory::access(PacketPtr pkt)
         }
     } else if (pkt->isRead()) {
         assert(!pkt->isWrite());
+        pkt->setHistory(pmemHisAddr[pkt->getAddr()]);
+        pkt->setDestination((pkt->getHistory() >>
+                            (((pkt->getOriginAddr() >> 5) & 7) << 1)) & 3);
         if (pkt->isLLSC()) {
             assert(!pkt->fromCache());
             // if the packet is not coming from a cache then we have
@@ -466,6 +472,7 @@ AbstractMemory::access(PacketPtr pkt)
             }
             assert(!pkt->req->isInstFetch());
             TRACE_PACKET("Write");
+            pmemHisAddr[pkt->getAddr()] = pkt->getHistory();
             stats.numWrites[pkt->req->requestorId()]++;
             stats.bytesWritten[pkt->req->requestorId()] += pkt->getSize();
         }

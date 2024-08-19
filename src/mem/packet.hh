@@ -393,7 +393,9 @@ class Packet : public Printable, public Extensible<Packet>
     /// @brief The address of request without any aligned.
     Addr originAddr;
 
-    uint8_t destination;
+    uint8_t destination = 0;
+
+    uint16_t history = 0;
 
     /// True if the request targets the secure memory space.
     bool _isSecure;
@@ -824,6 +826,14 @@ class Packet : public Printable, public Extensible<Packet>
 
     void setDestination(uint8_t _destination) {
         destination = _destination;
+    }
+
+    uint16_t getHistory() {
+        return history;
+    }
+
+    void setHistory(uint16_t _history) {
+        history = _history;
     }
 
     /**

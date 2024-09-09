@@ -403,6 +403,17 @@ BaseCache::handleTimingReqMiss(PacketPtr pkt, MSHR *mshr, CacheBlk *blk,
 void
 BaseCache::recvTimingReq(PacketPtr pkt)
 {
+    std::string pName = name();
+    if (pName.compare("system.cpu.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0) {
+            pkt->setOriginAddr(pkt->getAddr());
+    }
+    if (pName.compare("system.l2")) {
+        CacheBlk *blk = tags->findBlock(pkt->getAddr(),
+                       pkt->getOriginAddr(),
+                       pkt->isSecure());
+        if (blk) blk->acc = pkt->getAcc();
+    }
     // anything that is merely forwarded pays for the forward latency and
     // the delay provided by the crossbar
     Tick forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
@@ -641,6 +652,18 @@ BaseCache::recvAtomic(PacketPtr pkt)
     // should assert here that there are no outstanding MSHRs or
     // writebacks... that would mean that someone used an atomic
     // access in timing mode
+
+    std::string pName = name();
+    if (pName.compare("system.cpu.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0) {
+            pkt->setOriginAddr(pkt->getAddr());
+    }
+    if (pName.compare("system.l2")) {
+        CacheBlk *blk = tags->findBlock(pkt->getAddr(),
+                       pkt->getOriginAddr(),
+                       pkt->isSecure());
+        if (blk) blk->acc = pkt->getAcc();
+    }
 
     // We use lookupLatency here because it is used to specify the latency
     // to access.
@@ -1249,6 +1272,35 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     Cycles tag_latency(0);
     blk = tags->accessBlock(pkt, tag_latency);
 
+    std::string pName = name();
+    if (blk) {
+        if (blk->getWay() < 4) {
+            if ((pkt->getOriginAddr() >> 3) & 1) {
+                blk->acc = blk->acc | 0x1;
+            } else {
+                blk->acc = blk->acc | 0x10;
+            }
+        } else if (blk->getWay() < 8) {
+           if ((pkt->getOriginAddr() >> 3) & 1) {
+                blk->acc = blk->acc | 0x1;
+            } else {
+                blk->acc = blk->acc | 0x10;
+            }
+        } else if (blk->getWay() < 12) {
+            if ((pkt->getOriginAddr() >> 3) & 1) {
+                blk->acc = blk->acc | 0x1;
+            } else {
+                blk->acc = blk->acc | 0x10;
+            }
+        } else {
+            if ((pkt->getOriginAddr() >> 3) & 1) {
+                blk->acc = blk->acc | 0x1;
+            } else {
+                blk->acc = blk->acc | 0x10;
+            }
+        }
+    }
+
     DPRINTF(Cache, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss");
 
@@ -1691,6 +1743,10 @@ BaseCache::invalidateBlock(CacheBlk *blk)
 void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
+    std::string pName = name();
+    if (pName.compare("system.l2")) {
+        std::cout << "evict by acc:" << std::hex << (int)blk->acc << std::endl;
+    }
     PacketPtr pkt = evictBlock(blk);
     if (pkt) {
         writebacks.push_back(pkt);
@@ -1719,6 +1775,8 @@ BaseCache::writebackBlk(CacheBlk *blk)
         new Packet(req, blk->isSet(CacheBlk::DirtyBit) ?
                    MemCmd::WritebackDirty : MemCmd::WritebackClean);
 
+    pkt->setAcc(blk->acc);
+
     DPRINTF(Cache, "Create Writeback %s writable: %d, dirty: %d\n",
         pkt->print(), blk->isSet(CacheBlk::WritableBit),
         blk->isSet(CacheBlk::DirtyBit));
@@ -1743,6 +1801,7 @@ BaseCache::writebackBlk(CacheBlk *blk)
     if (compressor) {
         pkt->payloadDelay = compressor->getDecompressionLatency(blk);
     }
+
 
     return pkt;
 }

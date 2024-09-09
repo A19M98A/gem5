@@ -120,6 +120,8 @@ class CacheBlk : public TaggedEntry
      */
     uint8_t dataSize = 0;
 
+    uint8_t acc = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

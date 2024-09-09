@@ -395,6 +395,8 @@ class Packet : public Printable, public Extensible<Packet>
 
     uint8_t destination = 0;
 
+    uint8_t acc = 0;
+
     uint16_t history = 0;
 
     /// True if the request targets the secure memory space.
@@ -834,6 +836,14 @@ class Packet : public Printable, public Extensible<Packet>
 
     void setHistory(uint16_t _history) {
         history = _history;
+    }
+
+    uint8_t getAcc() {
+        return acc;
+    }
+
+    void setAcc(uint8_t _acc) {
+        acc = _acc;
     }
 
     /**

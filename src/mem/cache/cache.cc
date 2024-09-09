@@ -541,6 +541,8 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
     }
     PacketPtr pkt = new Packet(cpu_pkt->req, cmd, blkSize);
 
+    pkt->setOriginAddr(cpu_pkt->getOriginAddr());
+
     // if there are upstream caches that have already marked the
     // packet as having sharers (not passing writable), pass that info
     // downstream
@@ -974,6 +976,9 @@ Cache::cleanEvictBlk(CacheBlk *blk)
     req->taskId(blk->getTaskId());
 
     PacketPtr pkt = new Packet(req, MemCmd::CleanEvict);
+
+    pkt->setAcc(blk->acc);
+
     pkt->allocate();
     DPRINTF(Cache, "Create CleanEvict %s\n", pkt->print());
 

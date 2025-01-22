@@ -60,6 +60,10 @@ def _get_hwp(hwp_option):
 def _get_cache_opts(level, options):
     opts = {}
 
+    isReBECA = f"{level}_isReBECA"
+    if hasattr(options, isReBECA):
+        opts["isReBECA"] = getattr(options, isReBECA)
+
     size_attr = f"{level}_size"
     if hasattr(options, size_attr):
         opts["size"] = getattr(options, size_attr)

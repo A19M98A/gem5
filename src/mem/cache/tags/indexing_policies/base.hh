@@ -87,6 +87,11 @@ class BaseIndexingPolicy : public SimObject
     const unsigned setMask;
 
     /**
+     * The flag show run on ReBECA
+     */
+    const bool isReBECA;
+
+    /**
      * The cache sets.
      */
     std::vector<std::vector<ReplaceableEntry*>> sets;

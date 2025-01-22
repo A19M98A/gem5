@@ -35,6 +35,9 @@ class BaseIndexingPolicy(SimObject):
     cxx_class = "gem5::BaseIndexingPolicy"
     cxx_header = "mem/cache/tags/indexing_policies/base.hh"
 
+    # Get this cache is ReBECA cache or not
+    isReBECA = Param.Bool(Parent.isReBECA, "This cache is ReBECA cache or not")
+
     # Get the size from the parent (cache)
     size = Param.MemorySize(Parent.size, "capacity in bytes")
 

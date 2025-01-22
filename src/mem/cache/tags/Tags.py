@@ -45,6 +45,9 @@ class BaseTags(ClockedObject):
     cxx_header = "mem/cache/tags/base.hh"
     cxx_class = "gem5::BaseTags"
 
+    # Get this cache is ReBECA cache or not
+    isReBECA = Param.Bool(Parent.isReBECA, "This cache is ReBECA cache or not")
+
     # Get system to which it belongs
     system = Param.System(Parent.any, "System we belong to")
 

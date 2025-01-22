@@ -54,6 +54,10 @@ namespace gem5
 SetAssociative::SetAssociative(const Params &p)
     : BaseIndexingPolicy(p)
 {
+    if (isReBECA)
+        std::cout << "create set based on ReBECA" << std::endl;
+    else
+        std::cout << "create set  based on normal" << std::endl;
 }
 
 uint32_t
@@ -75,8 +79,12 @@ SetAssociative::getPossibleEntries(const Addr addr, const uint8_t type) const
     if (type != 0) {
         std::vector<ReplaceableEntry*> sector_entries;
         for (const auto& blk : sets[extractSet(addr)]) {
-            // Update victim entry if necessary
-            if ((blk->getWay() + 4)/4 == type) {
+            if (isReBECA) {
+                // Update victim entry if necessary
+                if ((blk->getWay() + 4)/4 == type) {
+                    sector_entries.push_back(blk);
+                }
+            } else {
                 sector_entries.push_back(blk);
             }
         }

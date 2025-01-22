@@ -83,6 +83,9 @@ class BaseCache(ClockedObject):
     cxx_header = "mem/cache/base.hh"
     cxx_class = "gem5::BaseCache"
 
+    # Get this cache is ReBECA cache or not
+    isReBECA = Param.Bool("This cache is ReBECA cache or not")
+
     size = Param.MemorySize("Capacity")
     assoc = Param.Unsigned("Associativity")
 

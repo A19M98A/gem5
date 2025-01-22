@@ -1745,7 +1745,7 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
     std::string pName = name();
     if (pName.compare("system.l2")) {
-        std::cout << "evict by acc:" << std::hex << (int)blk->acc << std::endl;
+        // TODO: Add action for update history.
     }
     PacketPtr pkt = evictBlock(blk);
     if (pkt) {

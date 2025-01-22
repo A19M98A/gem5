@@ -122,6 +122,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     // forward snoops is overridden in init() once we can query
     // whether the connected requestor is actually snooping or not
 
+    std::cout << name() << " -> block size:" << blkSize << std::endl;
+
     tempBlock = new TempCacheBlk(blkSize);
 
     tags->tagsInit();

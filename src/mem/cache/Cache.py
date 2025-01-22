@@ -74,7 +74,7 @@ class WriteAllocator(SimObject):
         "write coalescing",
     )
 
-    block_size = Param.Int(Parent.cache_line_size, "block size in bytes")
+    block_size = Param.Int("block size in bytes")
 
 
 class BaseCache(ClockedObject):
@@ -85,6 +85,7 @@ class BaseCache(ClockedObject):
 
     # Get this cache is ReBECA cache or not
     isReBECA = Param.Bool("This cache is ReBECA cache or not")
+    block_size = Param.Int("block size in bytes")
 
     size = Param.MemorySize("Capacity")
     assoc = Param.Unsigned("Associativity")

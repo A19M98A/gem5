@@ -60,6 +60,10 @@ def _get_hwp(hwp_option):
 def _get_cache_opts(level, options):
     opts = {}
 
+    block_size = f"{level}_block_size"
+    if hasattr(options, block_size):
+        opts["block_size"] = getattr(options, block_size)
+
     isReBECA = f"{level}_isReBECA"
     if hasattr(options, isReBECA):
         opts["isReBECA"] = getattr(options, isReBECA)

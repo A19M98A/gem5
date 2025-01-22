@@ -55,9 +55,9 @@ SetAssociative::SetAssociative(const Params &p)
     : BaseIndexingPolicy(p)
 {
     if (isReBECA)
-        std::cout << "create set based on ReBECA" << std::endl;
+        std::cout << name() << "create set based on ReBECA" << std::endl;
     else
-        std::cout << "create set  based on normal" << std::endl;
+        std::cout << name() << "create set based on normal" << std::endl;
 }
 
 uint32_t

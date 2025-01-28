@@ -45,6 +45,8 @@
 
 #include "mem/cache/base.hh"
 
+#include <cmath>
+
 #include "base/compiler.hh"
 #include "base/logging.hh"
 #include "debug/Cache.hh"
@@ -1368,7 +1370,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         updateBlockData(blk, pkt, has_old_data);
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
-        incHitCount(pkt);
+        incHitCount(pkt, blk);
 
         // When the packet metadata arrives, the tag lookup will be done while
         // the payload is arriving. Then the block will be ready to access as
@@ -1444,7 +1446,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         updateBlockData(blk, pkt, has_old_data);
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
 
-        incHitCount(pkt);
+        incHitCount(pkt, blk);
 
         // When the packet metadata arrives, the tag lookup will be done while
         // the payload is arriving. Then the block will be ready to access as
@@ -1458,7 +1460,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             blk->isSet(CacheBlk::WritableBit) :
             blk->isSet(CacheBlk::ReadableBit))) {
         // OK to satisfy access
-        incHitCount(pkt);
+        incHitCount(pkt, blk);
 
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
@@ -1656,6 +1658,8 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setSizeBits(victim, blk_size_bits);
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
+
+    updaTemperature(victim);
 
     return victim;
 }
@@ -2273,6 +2277,8 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
              "number of data expansions"),
     ADD_STAT(dataContractions, statistics::units::Count::get(),
              "number of data contractions"),
+    ADD_STAT(writeTemp, statistics::units::Count::get(),
+            "number of write on blkck at this temp"),
     cmd(MemCmd::NUM_MEM_CMDS)
 {
     for (int idx = 0; idx < MemCmd::NUM_MEM_CMDS; ++idx)
@@ -2498,6 +2504,12 @@ BaseCache::CacheStats::regStats()
     for (int i = 0; i < max_requestors; i++) {
         overallAvgMshrUncacheableLatency.subname(i,
             system->getRequestorName(i));
+    }
+
+    writeTemp.init(6);
+    for (int i = 0; i < 6; i++) {
+        writeTemp.subname(i, "Temperature[" + std::to_string(((i*25)+84)) + \
+         ".85-" + std::to_string(((i*25)+109)) + ".85]");
     }
 
     dataExpansions.flags(nozero | nonan);
@@ -2726,6 +2738,48 @@ WriteAllocator::updateMode(Addr write_addr, unsigned write_size,
         resetDelay(blk_addr);
     }
     nextAddr = write_addr + write_size;
+}
+
+void
+BaseCache::updaTemperature(CacheBlk *blk) {
+    Tick preTick = blk->lastWriteTick;
+
+    double T_inf = 85;
+    double T_initial = (double)blk->temperature/100;
+    double t = (double)(curTick() - preTick)/1000;
+    double tau = 8.4;
+    double exponent = -t / tau;
+    double ratio = std::exp(exponent); // e^(-t/tau)
+    double T = T_inf + (T_initial - T_inf) * ratio;
+    blk->temperature = (int)(T * 100);
+
+    int tempIndex = ((blk->temperature - 8485)/25);
+    if (tempIndex < 5 and tempIndex >= 0) {
+        stats.writeTemp[tempIndex]++;
+    } else {
+        stats.writeTemp[5]++;
+    }
+
+    switch ((curTick() - preTick) / 10000)
+    {
+    case 1:
+        blk->temperature += 11000;
+        break;
+    case 2:
+        blk->temperature += 9800;
+        break;
+    case 3:
+        blk->temperature += 9200;
+        break;
+    case 4:
+        blk->temperature += 8900;
+        break;
+
+    default:
+        blk->temperature += 8500;
+        break;
+    }
+    blk->lastWriteTick = curTick();
 }
 
 } // namespace gem5

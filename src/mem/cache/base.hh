@@ -1138,6 +1138,9 @@ class BaseCache : public ClockedObject
          */
         statistics::Scalar dataContractions;
 
+        /** The number of times this cache blocked for each blocked cause. */
+        statistics::Vector writeTemp;
+
         /** Per-command statistics */
         std::vector<std::unique_ptr<CacheCmdStats>> cmd;
     } stats;
@@ -1300,10 +1303,13 @@ class BaseCache : public ClockedObject
                 exitSimLoop("A cache reached the maximum miss count");
         }
     }
-    void incHitCount(PacketPtr pkt)
+    void incHitCount(PacketPtr pkt, CacheBlk *blk)
     {
         assert(pkt->req->requestorId() < system->maxRequestors());
         stats.cmdStats(pkt).hits[pkt->req->requestorId()]++;
+        if (pkt->isWrite()) {
+            updaTemperature(blk);
+        }
     }
 
     /**
@@ -1354,6 +1360,8 @@ class BaseCache : public ClockedObject
      */
     void serialize(CheckpointOut &cp) const override;
     void unserialize(CheckpointIn &cp) override;
+
+    void updaTemperature(CacheBlk *blk);
 };
 
 /**

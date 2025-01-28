@@ -108,6 +108,12 @@ class CacheBlk : public TaggedEntry
      */
     Tick whenReady = 0;
 
+    /**
+     * The temperature of block.
+     */
+    int temperature = 85;
+    Tick lastWriteTick = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

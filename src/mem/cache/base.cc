@@ -137,6 +137,11 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
         "Compressed cache %s does not have a compression algorithm", name());
     if (compressor)
         compressor->setCache(this);
+
+    maxWay = tags->getWayAllocationMax();
+    for (int i = 0; i < tags->getWayAllocationMax(); i++) {
+        ARList.push_back(std::make_tuple(0, i));
+    }
 }
 
 BaseCache::~BaseCache()
@@ -1026,7 +1031,7 @@ BaseCache::updateCompressionData(CacheBlk *&blk, const uint64_t* data,
         CacheBlk *victim = nullptr;
         if (replaceExpansions || is_data_contraction) {
             victim = tags->findVictim(regenerateBlkAddr(blk),
-                blk->isSecure(), compression_size, evict_blks);
+                blk->isSecure(), compression_size, evict_blks, victimWiSE);
 
             // It is valid to return nullptr if there is no victim
             if (!victim) {
@@ -1635,7 +1640,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     // Find replacement victim
     std::vector<CacheBlk*> evict_blks;
     CacheBlk *victim = tags->findVictim(addr, is_secure, blk_size_bits,
-                                        evict_blks);
+                                        evict_blks, victimWiSE);
 
     // It is valid to return nullptr if there is no victim
     if (!victim)
@@ -1687,6 +1692,8 @@ BaseCache::invalidateBlock(CacheBlk *blk)
 void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
+    if (victimWiSE == blk->getWay())
+        victimWiSE = -1;
     PacketPtr pkt = evictBlock(blk);
     if (pkt) {
         writebacks.push_back(pkt);
@@ -2764,19 +2771,24 @@ BaseCache::updaTemperature(CacheBlk *blk) {
     {
     case 1:
         blk->temperature += 11000;
+        //std::cout << name() << " -> write in 10ns" << std::endl;
         break;
     case 2:
         blk->temperature += 9800;
+        //std::cout << name() << " -> write in 20ns" << std::endl;
         break;
     case 3:
         blk->temperature += 9200;
+        //std::cout << name() << " -> write in 30ns" << std::endl;
         break;
     case 4:
         blk->temperature += 8900;
+        //std::cout << name() << " -> write in 40ns" << std::endl;
         break;
 
     default:
         blk->temperature += 8500;
+        //std::cout << name() << " -> write in >= 50ns" << std::endl;
         break;
     }
     blk->lastWriteTick = curTick();

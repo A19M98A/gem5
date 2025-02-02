@@ -2279,6 +2279,8 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
              "number of data contractions"),
     ADD_STAT(writeTemp, statistics::units::Count::get(),
             "number of write on blkck at this temp"),
+    ADD_STAT(writeDelay, statistics::units::Count::get(),
+            "number of write on blkck after this delay"),
     cmd(MemCmd::NUM_MEM_CMDS)
 {
     for (int idx = 0; idx < MemCmd::NUM_MEM_CMDS; ++idx)
@@ -2507,10 +2509,20 @@ BaseCache::CacheStats::regStats()
     }
 
     writeTemp.init(6);
-    for (int i = 0; i < 6; i++) {
+    writeTemp.subname(0, "Temperature[084.85-109.85]");
+    for (int i = 1; i < 5; i++) {
         writeTemp.subname(i, "Temperature[" + std::to_string(((i*25)+84)) + \
          ".85-" + std::to_string(((i*25)+109)) + ".85]");
     }
+    writeTemp.subname(5, "Temperature[209.85-  XX  ]");
+
+    writeDelay.init(10);
+    writeDelay.subname(0, "Delay[00-09]");
+    for (int i = 1; i < 9; i++) {
+        writeDelay.subname(i, "Delay[" + std::to_string((i*10)) + \
+         "-" + std::to_string(((i*10)+9)) + "]");
+    }
+    writeTemp.subname(9, "Temperature[90-XX]");
 
     dataExpansions.flags(nozero | nonan);
     dataContractions.flags(nozero | nonan);
@@ -2743,40 +2755,72 @@ WriteAllocator::updateMode(Addr write_addr, unsigned write_size,
 void
 BaseCache::updaTemperature(CacheBlk *blk) {
     Tick preTick = blk->lastWriteTick;
+    int tempIndex = ((blk->temperature - 8485)/25);
 
+    // Base on the WiSE Paper Equation (5)
     double T_inf = 85;
     double T_initial = (double)blk->temperature/100;
     double t = (double)(curTick() - preTick)/1000;
-    double tau = 8.4;
+    double tau = 8.4;  // This value need check!
     double exponent = -t / tau;
     double ratio = std::exp(exponent); // e^(-t/tau)
     double T = T_inf + (T_initial - T_inf) * ratio;
     blk->temperature = (int)(T * 100);
 
-    int tempIndex = ((blk->temperature - 8485)/25);
-    if (tempIndex < 5 and tempIndex >= 0) {
-        stats.writeTemp[tempIndex]++;
+    if (tempIndex < 5) {
+        stats.writeTemp[tempIndex < 0 ? 0 : tempIndex]++;
     } else {
         stats.writeTemp[5]++;
     }
 
+    // Base on the WiSE paper Fig 4
     switch ((curTick() - preTick) / 10000)
     {
+    case 0:
+        blk->temperature += 11000;
+        stats.writeDelay[0] += 1;
+        break;
     case 1:
         blk->temperature += 11000;
+        stats.writeDelay[1] += 1;
         break;
     case 2:
         blk->temperature += 9800;
+        stats.writeDelay[2] += 1;
         break;
     case 3:
         blk->temperature += 9200;
+        stats.writeDelay[3] += 1;
         break;
     case 4:
         blk->temperature += 8900;
+        stats.writeDelay[4] += 1;
+        break;
+    case 5:
+        blk->temperature += 8600;
+        stats.writeDelay[5] += 1;
+        break;
+    case 6:
+        blk->temperature += 8500;
+        stats.writeDelay[6] += 1;
+        break;
+    case 7:
+        blk->temperature += 8500;
+        stats.writeDelay[7] += 1;
+        break;
+    case 8:
+        blk->temperature += 8500;
+        stats.writeDelay[8] += 1;
+        break;
+    case 9:
+        blk->temperature += 8500;
+        stats.writeDelay[9] += 1;
         break;
 
     default:
         blk->temperature += 8500;
+        stats.writeDelay[0] += 1;
+
         break;
     }
     blk->lastWriteTick = curTick();

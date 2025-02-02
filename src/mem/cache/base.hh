@@ -1141,6 +1141,9 @@ class BaseCache : public ClockedObject
         /** The number of times this cache blocked for each blocked cause. */
         statistics::Vector writeTemp;
 
+        /** The number of times this cache blocked for each blocked cause. */
+        statistics::Vector writeDelay;
+
         /** Per-command statistics */
         std::vector<std::unique_ptr<CacheCmdStats>> cmd;
     } stats;

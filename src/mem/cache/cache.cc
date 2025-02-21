@@ -68,7 +68,8 @@ namespace gem5
 
 Cache::Cache(const CacheParams &p)
     : BaseCache(p, p.block_size),
-      doFastWrites(true)
+      doFastWrites(true),
+      isReBECA(p.isReBECA)
 {
     assert(p.tags);
     assert(p.replacement_policy);
@@ -83,7 +84,13 @@ Cache::satisfyRequest(PacketPtr pkt, CacheBlk *blk,
     if (pkt->isRead()) {
         // determine if this read is from a (coherent) cache or not
         if (pkt->fromCache()) {
-            assert(pkt->getSize() == blkSize);
+            if (isReBECA) {
+                // In ReBECA the block size of each level are different,
+                // so we don't need to check if the block size of
+                // the packet is the same as the block size of the cache.
+            } else {
+                assert(pkt->getSize() == blkSize);
+            }
             // special handling for coherent block requests from
             // upper-level caches
             if (pkt->needsWritable()) {
@@ -1225,8 +1232,9 @@ Cache::handleSnoop(PacketPtr pkt, CacheBlk *blk, bool is_timing,
             pkt->makeAtomicResponse();
             // packets such as upgrades do not actually have any data
             // payload
-            if (pkt->hasData())
+            if (pkt->hasData()) {
                 pkt->setDataFromBlock(blk->data, blkSize);
+            }
         }
 
         // When a block is compressed, it must first be decompressed before

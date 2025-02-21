@@ -67,6 +67,12 @@ class MSHR;
 class Cache : public BaseCache
 {
   protected:
+
+    /**
+     * The flag show run on ReBECA
+     */
+    const bool isReBECA;
+
     /**
      * This cache should allocate a block on a line-sized write miss.
      */

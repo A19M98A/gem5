@@ -137,6 +137,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
         "Compressed cache %s does not have a compression algorithm", name());
     if (compressor)
         compressor->setCache(this);
+
+    tags->getWayAllocationMax()
 }
 
 BaseCache::~BaseCache()
@@ -407,15 +409,23 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 {
     std::string pName = name();
     if (pName.compare("system.cpu.dcache") == 0 ||
-        pName.compare("system.cpu.icache") == 0) {
+        pName.compare("system.cpu0.dcache") == 0 ||
+        pName.compare("system.cpu1.dcache") == 0 ||
+        pName.compare("system.cpu2.dcache") == 0 ||
+        pName.compare("system.cpu3.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0 ||
+        pName.compare("system.cpu0.icache") == 0 ||
+        pName.compare("system.cpu1.icache") == 0 ||
+        pName.compare("system.cpu2.icache") == 0 ||
+        pName.compare("system.cpu3.icache") == 0) {
             pkt->setOriginAddr(pkt->getAddr());
-    }
-    if (pName.compare("system.l2")) {
+    } else {
         CacheBlk *blk = tags->findBlock(pkt->getAddr(),
                        pkt->getOriginAddr(),
                        pkt->isSecure());
         if (blk) blk->acc = pkt->getAcc();
     }
+
     // anything that is merely forwarded pays for the forward latency and
     // the delay provided by the crossbar
     Tick forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
@@ -657,10 +667,17 @@ BaseCache::recvAtomic(PacketPtr pkt)
 
     std::string pName = name();
     if (pName.compare("system.cpu.dcache") == 0 ||
-        pName.compare("system.cpu.icache") == 0) {
+        pName.compare("system.cpu0.dcache") == 0 ||
+        pName.compare("system.cpu1.dcache") == 0 ||
+        pName.compare("system.cpu2.dcache") == 0 ||
+        pName.compare("system.cpu3.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0 ||
+        pName.compare("system.cpu0.icache") == 0 ||
+        pName.compare("system.cpu1.icache") == 0 ||
+        pName.compare("system.cpu2.icache") == 0 ||
+        pName.compare("system.cpu3.icache") == 0) {
             pkt->setOriginAddr(pkt->getAddr());
-    }
-    if (pName.compare("system.l2")) {
+    } else {
         CacheBlk *blk = tags->findBlock(pkt->getAddr(),
                        pkt->getOriginAddr(),
                        pkt->isSecure());
@@ -1189,6 +1206,7 @@ BaseCache::satisfyRequest(PacketPtr pkt, CacheBlk *blk, bool, bool)
 
         // all read responses have a data payload
         assert(pkt->hasRespData());
+        std::string pName = name();
         pkt->setDataFromBlock(blk->data, blkSize);
     } else if (pkt->isUpgrade()) {
         // sanity check
@@ -1275,31 +1293,14 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     blk = tags->accessBlock(pkt, tag_latency);
 
     std::string pName = name();
+
     if (blk) {
-        if (blk->getWay() < 4) {
-            if ((pkt->getOriginAddr() >> 3) & 1) {
-                blk->acc = blk->acc | 0x1;
-            } else {
-                blk->acc = blk->acc | 0x10;
-            }
-        } else if (blk->getWay() < 8) {
-           if ((pkt->getOriginAddr() >> 3) & 1) {
-                blk->acc = blk->acc | 0x1;
-            } else {
-                blk->acc = blk->acc | 0x10;
-            }
-        } else if (blk->getWay() < 12) {
-            if ((pkt->getOriginAddr() >> 3) & 1) {
-                blk->acc = blk->acc | 0x1;
-            } else {
-                blk->acc = blk->acc | 0x10;
-            }
+        if ((((pkt->getOriginAddr() >> 3) & 1) && (blk->getWay()/40 == 2)) ||
+            (((pkt->getOriginAddr() >> 4) & 1) && (blk->getWay()/40 == 1)) ||
+            (((pkt->getOriginAddr() >> 5) & 1) && (blk->getWay()/40 == 3))) {
+            blk->acc |= 0x1;
         } else {
-            if ((pkt->getOriginAddr() >> 3) & 1) {
-                blk->acc = blk->acc | 0x1;
-            } else {
-                blk->acc = blk->acc | 0x10;
-            }
+            blk->acc |= 0x2;
         }
     }
 
@@ -1748,6 +1749,7 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     std::string pName = name();
     if (pName.compare("system.l2")) {
         // TODO: Add action for update history.
+
     }
     PacketPtr pkt = evictBlock(blk);
     if (pkt) {
@@ -1796,6 +1798,7 @@ BaseCache::writebackBlk(CacheBlk *blk)
     blk->clearCoherenceBits(CacheBlk::DirtyBit);
 
     pkt->allocate();
+    std::string pName = name();
     pkt->setDataFromBlock(blk->data, blkSize);
 
     // When a block is compressed, it must first be decompressed before being
@@ -1842,6 +1845,7 @@ BaseCache::writecleanBlk(CacheBlk *blk, Request::Flags dest, PacketId id)
     blk->clearCoherenceBits(CacheBlk::DirtyBit);
 
     pkt->allocate();
+    std::string pName = name();
     pkt->setDataFromBlock(blk->data, blkSize);
 
     // When a block is compressed, it must first be decompressed before being

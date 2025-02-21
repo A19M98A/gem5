@@ -1348,11 +1348,25 @@ class Packet : public Printable, public Extensible<Packet>
     /**
      * Copy data into the packet from the provided block pointer,
      * which is aligned to the given block size.
+     * [AM.A] for ReBECA
+     * *p = (((blkSize - 1) - (size - 1)) & originAddr)
+     * *q = blk_data
+     *
+     *              point to sub blk  *p
+     *                                 |
+     *                                 v
+     *     blk_data:[........|........|XXXXXXXX|.........]
+     *               ^
+     *               |
+     * point to blk *q
      */
     void
     setDataFromBlock(const uint8_t *blk_data, int blkSize)
     {
-        setData(blk_data + getOffset(blkSize));
+        if (cacheResponding())
+            setData(blk_data + (((blkSize - 1) - (size - 1)) & originAddr));
+        else
+            setData(blk_data + getOffset(blkSize));
     }
 
     /**

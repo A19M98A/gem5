@@ -474,7 +474,7 @@ class BaseCache : public ClockedObject
      * @return The number of ticks that pass due to a block access.
      */
     Cycles calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
-                                  const Cycles lookup_lat) const;
+                                  const Cycles lookup_lat, bool isWrite) const;
 
     /**
      * Does all the processing necessary to perform the provided request.
@@ -1144,6 +1144,10 @@ class BaseCache : public ClockedObject
         /** The number of times this cache blocked for each blocked cause. */
         statistics::Vector writeDelay;
 
+        /** The number of times write on this cache blocke
+         * with this haming distance. */
+        statistics::Vector writeHamingDistance;
+
         /** Per-command statistics */
         std::vector<std::unique_ptr<CacheCmdStats>> cmd;
     } stats;
@@ -1311,7 +1315,7 @@ class BaseCache : public ClockedObject
         assert(pkt->req->requestorId() < system->maxRequestors());
         stats.cmdStats(pkt).hits[pkt->req->requestorId()]++;
         if (pkt->isWrite()) {
-            updaTemperature(blk);
+            updaTemperature(blk, pkt);
         }
     }
 
@@ -1364,7 +1368,8 @@ class BaseCache : public ClockedObject
     void serialize(CheckpointOut &cp) const override;
     void unserialize(CheckpointIn &cp) override;
 
-    void updaTemperature(CacheBlk *blk);
+    void updaTemperature(CacheBlk *blk, PacketPtr pkt);
+    int updateNeighbor(int nTemp, int setIndex, int wayIndex);
 };
 
 /**

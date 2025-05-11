@@ -46,7 +46,6 @@
 #include "mem/cache/base.hh"
 
 #include <cmath>
-#include <cstdint>
 
 #include "base/compiler.hh"
 #include "base/logging.hh"
@@ -1202,7 +1201,7 @@ BaseCache::calculateTagOnlyLatency(const uint32_t delay,
 
 Cycles
 BaseCache::calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
-                                  const Cycles lookup_lat, bool isWrite) const
+                                  const Cycles lookup_lat) const
 {
     Cycles lat(0);
 
@@ -1470,8 +1469,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
-            lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency,
-                                         true);
+            lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
 
             // When a block is compressed, it must first be decompressed
             // before being read. This adds to the access latency.
@@ -1493,7 +1491,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     incMissCount(pkt);
 
-    lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency, false);
+    lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
 
     if (!blk && pkt->isLLSC() && pkt->isWrite()) {
         // complete miss on store conditional... just give up now
@@ -1666,7 +1664,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
 
-    updaTemperature(victim, pkt);
+    updaTemperature(victim);
 
     return victim;
 }
@@ -2288,10 +2286,6 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
              "number of data contractions"),
     ADD_STAT(writeTemp, statistics::units::Count::get(),
             "number of write on blkck at this temp"),
-    ADD_STAT(writeDelay, statistics::units::Count::get(),
-            "number of write on blkck after this delay"),
-    ADD_STAT(writeHamingDistance, statistics::units::Count::get(),
-            "number of write on blkck with this hamming distance"),
     cmd(MemCmd::NUM_MEM_CMDS)
 {
     for (int idx = 0; idx < MemCmd::NUM_MEM_CMDS; ++idx)
@@ -2519,37 +2513,10 @@ BaseCache::CacheStats::regStats()
             system->getRequestorName(i));
     }
 
-    writeTemp.init(9);
-    writeTemp.subname(0, "Temperature[25 - 45]");
-    writeTemp.subname(1, "Temperature[46 - 65]");
-    writeTemp.subname(2, "Temperature[66 - 85]");
-    writeTemp.subname(3, "Temperature[86 -105]");
-    for (int i = 0; i < 4; i++) {
-        writeTemp.subname(i+4, "Temperature[" + std::to_string((i*20)+106) + \
-         "-" + std::to_string(((i*20)+125)) + "]");
-    }
-    writeTemp.subname(8, "Temperature[206- XX]");
-
-    writeDelay.init(10);
-    writeDelay.subname(0, "Delay[00-09]");
-    for (int i = 1; i < 9; i++) {
-        writeDelay.subname(i, "Delay[" + std::to_string((i*10)) + \
-         "-" + std::to_string(((i*10)+9)) + "]");
-    }
-    writeDelay.subname(9, "Delay[90-XX]");
-
-    writeHamingDistance.init(65);
-    writeHamingDistance.subname(0, "Hamming[   0   ]");
-    for (int i = 0; i < 12; i++) {
-        writeHamingDistance.subname(i+1, "Hamming[ " + \
-                                    std::to_string((8*i+1)) + \
-                                    "-" + std::to_string((8*(i+1))) + " ]");
-    }
-    writeHamingDistance.subname(12, "Hamming[ 97-104]");
-    for (int i = 13; i < 65; i++) {
-        writeHamingDistance.subname(i, "Hamming[" + \
-                                    std::to_string((8*i+1)) + \
-                                    "-" + std::to_string((8*(i+1))) + "]");
+    writeTemp.init(6);
+    for (int i = 0; i < 6; i++) {
+        writeTemp.subname(i, "Temperature[" + std::to_string(((i*25)+84)) + \
+         ".85-" + std::to_string(((i*25)+109)) + ".85]");
     }
 
     dataExpansions.flags(nozero | nonan);
@@ -2780,115 +2747,50 @@ WriteAllocator::updateMode(Addr write_addr, unsigned write_size,
     nextAddr = write_addr + write_size;
 }
 
-int
-BaseCache::updateNeighbor(int nTemp, int setIndex, int wayIndex){
-    if (setIndex < 0) {
-        return 0;
-    }
-    CacheBlk *blk = static_cast<CacheBlk*>
-        (tags->findBlockBySetAndWay(setIndex, wayIndex));
-
-    if (blk == nullptr) {
-        return 0;
-    }
-    Tick preTick = blk->lastWriteTick;
-
-    // Base on the WiSE Paper Equation (5)
-    int tempIndex = (20900 - blk->temperature) / 500;
-    tempIndex = tempIndex > 24 ? 24 : tempIndex;
-    int delayIndex = (curTick() - preTick) / 1000;
-    delayIndex = delayIndex > 9 ? 9 : delayIndex;
-    blk->temperature = (coolMap[tempIndex][delayIndex]*100 + nTemp)/2;
-    blk->lastWriteTick = curTick();
-    return blk->temperature;
-}
-
 void
-BaseCache::updaTemperature(CacheBlk *blk, PacketPtr pkt) {
-    // Calculate the haming distance (transitions 0 to 1)
-    int hammingDistance = 0;
-
-    int transitions0to1 = 0;
-    int transitions1to0 = 0;
-    int transitions1to1 = 0;
-    int transitions0to0 = 0;
-
-    uint8_t *pData = pkt->getData();
-    uint8_t *bData = blk->data;
-    for (int i = 0; i < pkt->getSize(); i++) {
-        for (int j = 0; j < 8; j++) {
-            uint8_t pbBit = (((pData[i] >> j) & 1) << 1) +
-                            ((bData[i] >> j) & 1);
-
-            switch (pbBit) {
-                case 0:
-                    transitions0to0++;
-                    break;
-                case 1:
-                    transitions0to1++;
-                    break;
-                case 2:
-                    transitions1to0++;
-                    break;
-                case 3:
-                    transitions1to1++;
-                    break;
-            }
-            uint8_t ham = ((~((bData[i] >> j) & 1)) &
-                            ((pData[i] >> j) & 1)) +
-                            (((bData[i] >> j) & 1) &
-                            (~((pData[i] >> j) & 1)));
-            hammingDistance += ham;
-        }
-    }
-
-    if (hammingDistance == 0) {
-        stats.writeHamingDistance[0]++;
-    } else {
-        int hIndex = hammingDistance / 8 + 1;
-        if (hIndex < 64) {
-            stats.writeHamingDistance[hIndex]++;
-        } else {
-            stats.writeHamingDistance[64]++;
-        }
-    }
-
+BaseCache::updaTemperature(CacheBlk *blk) {
     Tick preTick = blk->lastWriteTick;
 
-    // Base on the WiSE Paper Equation (5)
-    int tempIndex = (20900 - blk->temperature) / 500;
-    tempIndex = tempIndex > 24 ? 24 : tempIndex;
-    int delayIndex = (curTick() - preTick) / 1000;
-    delayIndex = delayIndex > 9 ? 9 : delayIndex;
+    double T_inf = 85;
+    double T_initial = (double)blk->temperature/100;
+    double t = (double)(curTick() - preTick)/1000;
+    double tau = 8.4;
+    double exponent = -t / tau;
+    double ratio = std::exp(exponent); // e^(-t/tau)
+    double T = T_inf + (T_initial - T_inf) * ratio;
+    blk->temperature = (int)(T * 100);
 
-    blk->temperature = coolMap[tempIndex][delayIndex]*100;
-    tempIndex = (blk->temperature - 8500);
-
-    stats.writeDelay[delayIndex]++;
-
-    // the value of temperature increases on temperature 25 is 10.50
-    // and for each one digree more than 25 that increase is 0.01
-    int newTemp = blk->temperature + (tempIndex + 1105);
-    blk->temperature = newTemp > 20900 ? 20900 : newTemp;
-
-    uint8_t index = (blk->temperature - 2600) / 2000;
-    if (index < 8) {
-        stats.writeTemp[index]++;
+    int tempIndex = ((blk->temperature - 8485)/25);
+    if (tempIndex < 5 and tempIndex >= 0) {
+        stats.writeTemp[tempIndex]++;
     } else {
-        stats.writeTemp[8]++;
+        stats.writeTemp[5]++;
     }
 
-    int prN = updateNeighbor(blk->temperature,
-                             blk->getSet() + 1, blk->getWay());
-    prN = updateNeighbor(prN, blk->getSet() + 2, blk->getWay());
-    prN = updateNeighbor(prN, blk->getSet() + 3, blk->getWay());
+    switch ((curTick() - preTick) / 10000)
+    {
+    case 1:
+        blk->temperature += 11000;
+        //std::cout << name() << " -> write in 10ns" << std::endl;
+        break;
+    case 2:
+        blk->temperature += 9800;
+        //std::cout << name() << " -> write in 20ns" << std::endl;
+        break;
+    case 3:
+        blk->temperature += 9200;
+        //std::cout << name() << " -> write in 30ns" << std::endl;
+        break;
+    case 4:
+        blk->temperature += 8900;
+        //std::cout << name() << " -> write in 40ns" << std::endl;
+        break;
 
-    prN = updateNeighbor(blk->temperature,
-                         blk->getSet() - 1, blk->getWay());
-    prN = updateNeighbor(prN, blk->getSet() - 2, blk->getWay());
-    prN = updateNeighbor(prN, blk->getSet() - 3, blk->getWay());
-
-    // Base on the WiSE paper Fig 4
+    default:
+        blk->temperature += 8500;
+        //std::cout << name() << " -> write in >= 50ns" << std::endl;
+        break;
+    }
     blk->lastWriteTick = curTick();
 }
 

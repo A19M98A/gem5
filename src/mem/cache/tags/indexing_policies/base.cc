@@ -74,9 +74,6 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
 ReplaceableEntry*
 BaseIndexingPolicy::getEntry(const uint32_t set, const uint32_t way) const
 {
-    if (set >= numSets || way >= assoc) {
-        return nullptr;
-    }
     return sets[set][way];
 }
 

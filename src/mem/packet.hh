@@ -473,11 +473,6 @@ class Packet : public Printable, public Extensible<Packet>
     };
 
     /**
-     * This fuction return back data pointer.
-     */
-    PacketDataPtr getData() const { return data; }
-
-    /**
      * Object used to maintain state of a PrintReq.  The senderState
      * field of a PrintReq should always be of this type.
      */

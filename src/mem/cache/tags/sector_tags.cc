@@ -274,7 +274,7 @@ SectorTags::findBlock(Addr addr, bool is_secure) const
 
 CacheBlk*
 SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
-                       std::vector<CacheBlk*>& evict_blks)
+                       std::vector<CacheBlk*>& evict_blks, int victimWiSE)
 {
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> sector_entries =

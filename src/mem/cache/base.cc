@@ -2787,14 +2787,11 @@ BaseCache::updateNeighbor(int nTemp, int setIndex, int wayIndex){
     Tick preTick = blk->lastWriteTick;
 
     // Base on the WiSE Paper Equation (5)
-    double T_inf = 85;
-    double T_initial = (double)blk->temperature/100;
-    double t = (double)(curTick() - preTick)/1000;
-    double tau = 14;  // This value need check!
-    double exponent = -t / tau;
-    double ratio = std::exp(exponent); // e^(-t/tau)
-    double T = T_inf + (T_initial - T_inf) * ratio;
-    blk->temperature = ((int)(T * 100) + nTemp)/2;
+    int tempIndex = (20900 - blk->temperature) / 500;
+    tempIndex = tempIndex > 24 ? 24 : tempIndex;
+    int delayIndex = (curTick() - preTick) / 1000;
+    delayIndex = delayIndex > 9 ? 9 : delayIndex;
+    blk->temperature = (coolMap[tempIndex][delayIndex]*100 + nTemp)/2;
     blk->lastWriteTick = curTick();
     return blk->temperature;
 }
@@ -2804,13 +2801,37 @@ BaseCache::updaTemperature(CacheBlk *blk, PacketPtr pkt) {
     // Calculate the haming distance (transitions 0 to 1)
     int hammingDistance = 0;
 
+    int transitions0to1 = 0;
+    int transitions1to0 = 0;
+    int transitions1to1 = 0;
+    int transitions0to0 = 0;
+
     uint8_t *pData = pkt->getData();
     uint8_t *bData = blk->data;
     for (int i = 0; i < pkt->getSize(); i++) {
         for (int j = 0; j < 8; j++) {
-            uint8_t zToO = (~((bData[i] >> j) & 1)) &
-                            ((pData[i] >> j) & 1);
-            hammingDistance += zToO;
+            uint8_t pbBit = (((pData[i] >> j) & 1) << 1) +
+                            ((bData[i] >> j) & 1);
+
+            switch (pbBit) {
+                case 0:
+                    transitions0to0++;
+                    break;
+                case 1:
+                    transitions0to1++;
+                    break;
+                case 2:
+                    transitions1to0++;
+                    break;
+                case 3:
+                    transitions1to1++;
+                    break;
+            }
+            uint8_t ham = ((~((bData[i] >> j) & 1)) &
+                            ((pData[i] >> j) & 1)) +
+                            (((bData[i] >> j) & 1) &
+                            (~((pData[i] >> j) & 1)));
+            hammingDistance += ham;
         }
     }
 
@@ -2828,15 +2849,20 @@ BaseCache::updaTemperature(CacheBlk *blk, PacketPtr pkt) {
     Tick preTick = blk->lastWriteTick;
 
     // Base on the WiSE Paper Equation (5)
-    double T_inf = 85;
-    double T_initial = (double)blk->temperature/100;
-    double t = (double)(curTick() - preTick)/1000;
-    double tau = 14;  // This value need check!
-    double exponent = -t / tau;
-    double ratio = std::exp(exponent); // e^(-t/tau)
-    double T = T_inf + (T_initial - T_inf) * ratio;
-    blk->temperature = (int)(T * 100);
-    int tempIndex = (blk->temperature - 2500);
+    int tempIndex = (20900 - blk->temperature) / 500;
+    tempIndex = tempIndex > 24 ? 24 : tempIndex;
+    int delayIndex = (curTick() - preTick) / 1000;
+    delayIndex = delayIndex > 9 ? 9 : delayIndex;
+
+    blk->temperature = coolMap[tempIndex][delayIndex]*100;
+    tempIndex = (blk->temperature - 8500);
+
+    stats.writeDelay[delayIndex]++;
+
+    // the value of temperature increases on temperature 25 is 10.50
+    // and for each one digree more than 25 that increase is 0.01
+    int newTemp = blk->temperature + (tempIndex + 1105);
+    blk->temperature = newTemp > 20900 ? 20900 : newTemp;
 
     uint8_t index = (blk->temperature - 2600) / 2000;
     if (index < 8) {
@@ -2845,20 +2871,10 @@ BaseCache::updaTemperature(CacheBlk *blk, PacketPtr pkt) {
         stats.writeTemp[8]++;
     }
 
-    if (t < 80) {
-        stats.writeDelay[int(t/10)]++;
-    } else {
-        stats.writeDelay[8]++;
-    }
-
-    // the value of temperature increases on temperature 25 is 10.50
-    // and for each one digree more than 25 that increase is 0.01
-    blk->temperature += (((tempIndex + 1050) * hammingDistance) / 512);
-
     int prN = updateNeighbor(blk->temperature,
                              blk->getSet() + 1, blk->getWay());
-    prN = updateNeighbor(prN, blk->getSet() + 1, blk->getWay());
     prN = updateNeighbor(prN, blk->getSet() + 2, blk->getWay());
+    prN = updateNeighbor(prN, blk->getSet() + 3, blk->getWay());
 
     prN = updateNeighbor(blk->temperature,
                          blk->getSet() - 1, blk->getWay());

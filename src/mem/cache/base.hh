@@ -456,16 +456,6 @@ class BaseCache : public ClockedObject
     int maxWay;
 
     /**
-     * List of Age and Reward
-     */
-    std::list<std::tuple<int,int>> ARList;
-
-    /**
-     * Number of way select for evict by WiSE
-     */
-     int victimWiSE = -1;
-
-    /**
      * Mark a request as in service (sent downstream in the memory
      * system), effectively making this MSHR the ordering point.
      */
@@ -1384,39 +1374,6 @@ class BaseCache : public ClockedObject
         stats.cmdStats(pkt).hits[pkt->req->requestorId()]++;
         if (pkt->isWrite()) {
             updaTemperature(blk, pkt);
-        std::string pName = name();
-        if (pkt->isWrite() && pName.compare("system.l2") == 0) {
-            updaTemperature(blk);
-
-            int hit_way = blk->getWay();
-            int hit_index = 0;
-            int hit_reward = 0;
-
-            for (auto it = ARList.begin(); it != ARList.end(); ++it) {
-                if (std::get<1>(*it) == hit_way) {
-                    hit_reward = std::get<0>(*it);
-                    if (hit_index == maxWay - 1) {
-                        if (hit_reward == 15) {
-                            hit_reward = 0;
-                        } else {
-                            hit_reward++;
-                        }
-                    } else if (hit_index == 0) {
-                        if (hit_reward == -15) {
-                            victimWiSE = blk->getWay();
-                            hit_reward = 0;
-                        } else {
-                            hit_reward--;
-                        }
-                    }
-                    break;
-                }
-                hit_index++;
-            }
-            auto it = ARList.begin();
-            std::advance(it, hit_index);
-            ARList.erase(it);
-            ARList.emplace_front(hit_reward, hit_way);
         }
     }
 

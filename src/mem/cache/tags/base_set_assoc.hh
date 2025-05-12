@@ -167,23 +167,14 @@ class BaseSetAssoc : public BaseTags
      */
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
-                         std::vector<CacheBlk*>& evict_blks,
-                         int victimWiSE) override
+                         std::vector<CacheBlk*>& evict_blks) override
     {
         // Get possible entries to be victimized
         const std::vector<ReplaceableEntry*> entries =
             indexingPolicy->getPossibleEntries(addr);
         CacheBlk* victim = nullptr;
-        if (victimWiSE != -1) {
-            auto it = entries.begin();
-            std::advance(it, victimWiSE);
-            victim = static_cast<CacheBlk*>(*it);
-        }
-        else {
-            // Choose replacement victim from replacement candidates
-            victim = static_cast<CacheBlk*>(replacementPolicy->getVictim(
+        victim = static_cast<CacheBlk*>(replacementPolicy->getVictim(
                                             entries));
-        }
 
         // There is only one eviction for this replacement
         evict_blks.push_back(victim);

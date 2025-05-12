@@ -1382,12 +1382,10 @@ class BaseCache : public ClockedObject
     {
         assert(pkt->req->requestorId() < system->maxRequestors());
         stats.cmdStats(pkt).hits[pkt->req->requestorId()]++;
-        if (pkt->isWrite()) {
+        if (pkt->isWrite())
             updaTemperature(blk, pkt);
         std::string pName = name();
         if (pkt->isWrite() && pName.compare("system.l2") == 0) {
-            updaTemperature(blk);
-
             int hit_way = blk->getWay();
             int hit_index = 0;
             int hit_reward = 0;

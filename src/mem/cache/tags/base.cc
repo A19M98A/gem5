@@ -70,6 +70,12 @@ BaseTags::BaseTags(const Params &p)
     registerExitCallback([this]() { cleanupRefs(); });
 }
 
+uint32_t
+BaseTags::extractSet(const Addr addr) const
+{
+    return indexingPolicy->getSet(addr);
+}
+
 ReplaceableEntry*
 BaseTags::findBlockBySetAndWay(int set, int way) const
 {

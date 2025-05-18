@@ -147,6 +147,15 @@ class BaseCache : public ClockedObject
         {89,  87.0537, 86.0544, 85.5413, 85.2779, 85.1427,
             85.0733, 85.0376, 85.0193, 85.0099}
     };
+
+    /**
+     * list of Write Pointers
+     */
+    std::vector<int> writePointers;
+
+
+    int numSets;
+
     /**
      * Indexes to enumerate the MSHR queues.
      */

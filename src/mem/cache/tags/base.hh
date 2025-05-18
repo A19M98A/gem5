@@ -72,6 +72,14 @@ class ReplaceableEntry;
  */
 class BaseTags : public ClockedObject
 {
+  public:
+    /**
+     * Apply a hash function to calculate address set.
+     *
+     * @param addr The address to calculate the set for.
+     * @return The set index for given combination of address and way.
+     */
+    virtual uint32_t extractSet(const Addr addr) const;
   protected:
     /** The block size of the cache. */
     const unsigned blkSize;
@@ -280,7 +288,8 @@ class BaseTags : public ClockedObject
      */
     virtual CacheBlk* findVictim(Addr addr, const bool is_secure,
                                  const std::size_t size,
-                                 std::vector<CacheBlk*>& evict_blks) = 0;
+                                 std::vector<CacheBlk*>& evict_blks,
+                                 const int pW = -1) = 0;
 
     /**
      * Access block and update replacement data. May not succeed, in which case

@@ -270,6 +270,8 @@ class CacheBlk : public TaggedEntry
      */
     Tick getWhenReady() const
     {
+        std::cout << print() << " -> whenReady: " << whenReady
+                  << " MaxTick: " << MaxTick << std::endl;
         assert(whenReady != MaxTick);
         return whenReady;
     }

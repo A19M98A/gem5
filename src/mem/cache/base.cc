@@ -140,6 +140,12 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
         compressor->setCache(this);
 
     maxWay = tags->getWayAllocationMax();
+    numSets = int(p.size) / (int(blkSize) * int(p.assoc));
+
+    writePointers.resize(int(numSets));
+    for (int i = 0; i < int(numSets); ++i) {
+        writePointers[i] = 0;
+    }
 }
 
 BaseCache::~BaseCache()
@@ -1371,15 +1377,31 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
 
-        updateBlockData(blk, pkt, has_old_data);
-        DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
-        incHitCount(pkt, blk);
+        std::string pName = name();
+        if (pName.compare("system.l2") == 0 &&
+                writePointers[blk->getSet()] != blk->getWay()) {
+            std::cout << "invaliding blk, wp: "
+                << writePointers[blk->getSet()];
+            std::cout << ", blk->way: "
+                << blk->getWay() << std::endl;
+            //  invalidateBlock(blk);
+            blk->invalidate();
+            allocateBlock(pkt, writebacks);
+        } else {
+            updateBlockData(blk, pkt, has_old_data);
+            DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
+            incHitCount(pkt, blk);
 
-        // When the packet metadata arrives, the tag lookup will be done while
-        // the payload is arriving. Then the block will be ready to access as
-        // soon as the fill is done
-        blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
-            std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
+            writePointers[blk->getSet()] += 3;
+            writePointers[blk->getSet()] %= 8;
+
+            // When the packet metadata arrives, the tag lookup will be
+            // done while the payload is arriving. Then the block will be
+            // ready to access as soon as the fill is done
+            blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
+                std::max(cyclesToTicks(tag_latency),
+                         (uint64_t)pkt->payloadDelay));
+        }
 
         return true;
     } else if (pkt->cmd == MemCmd::CleanEvict) {
@@ -1637,9 +1659,21 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     }
 
     // Find replacement victim
+    CacheBlk *victim = nullptr;
     std::vector<CacheBlk*> evict_blks;
-    CacheBlk *victim = tags->findVictim(addr, is_secure, blk_size_bits,
-                                        evict_blks);
+    std::string pName = name();
+    if (pName.compare("system.l2") == 0) {
+        int block_set = tags-> extractSet(pkt->getAddr());
+        victim = tags->findVictim(addr, is_secure, blk_size_bits,
+                                  evict_blks, writePointers[block_set]);
+        std::cout << "wp: " << writePointers[block_set];
+        std::cout << ", victim->way: " << victim->getWay() << std::endl;
+        writePointers[block_set] += 3;
+        writePointers[block_set] %= maxWay;
+    } else {
+        victim = tags->findVictim(addr, is_secure, blk_size_bits,
+                                  evict_blks);
+    }
 
     // It is valid to return nullptr if there is no victim
     if (!victim)

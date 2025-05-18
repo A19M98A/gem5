@@ -104,4 +104,10 @@ BaseIndexingPolicy::extractTag(const Addr addr) const
     return (addr >> tagShift);
 }
 
+uint32_t
+BaseIndexingPolicy::getSet(const Addr addr) const
+{
+    return (addr >> setShift) & setMask;
+}
+
 } // namespace gem5

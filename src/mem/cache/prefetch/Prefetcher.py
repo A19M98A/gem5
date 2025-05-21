@@ -68,7 +68,7 @@ class BasePrefetcher(ClockedObject):
     sys = Param.System(Parent.any, "System this prefetcher belongs to")
 
     # Get the block size from the parent (system)
-    block_size = Param.Int(Parent.cache_line_size, "Block size in bytes")
+    block_size = Param.Int(Parent.block_size, "Block size in bytes")
 
     on_miss = Param.Bool(False, "Only notify prefetcher on misses")
     on_read = Param.Bool(True, "Notify prefetcher on reads")

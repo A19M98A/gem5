@@ -38,7 +38,7 @@ class BaseCacheCompressor(SimObject):
     cxx_class = "gem5::compression::Base"
     cxx_header = "mem/cache/compressors/base.hh"
 
-    block_size = Param.Int(Parent.cache_line_size, "Block size in bytes")
+    block_size = Param.Int(Parent.block_size, "Block size in bytes")
     chunk_size_bits = Param.Unsigned(
         32, "Size of a parsing data chunk (in bits)"
     )

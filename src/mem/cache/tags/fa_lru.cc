@@ -170,6 +170,8 @@ FALRU::findBlock(Addr addr, Addr originAddr, bool is_secure) const
 {
     FALRUBlk* blk = nullptr;
 
+    // TODO: check this line generate curect addr or not?
+    // TODO: AM.A: yes or no?
     Addr tag = extractTag(addr);
     auto iter = tagHash.find(std::make_pair(tag, is_secure));
     if (iter != tagHash.end()) {

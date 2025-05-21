@@ -49,6 +49,7 @@
 
 #include <bitset>
 #include <cassert>
+#include <cstdint>
 #include <initializer_list>
 #include <list>
 
@@ -949,6 +950,7 @@ class Packet : public Printable, public Extensible<Packet>
             size = req->getSize();
             flags.set(VALID_SIZE);
         }
+        originAddr = addr;
     }
 
     /**
@@ -973,6 +975,7 @@ class Packet : public Printable, public Extensible<Packet>
         }
         size = _blkSize;
         flags.set(VALID_SIZE);
+        originAddr = addr;
     }
 
     /**
@@ -1025,6 +1028,7 @@ class Packet : public Printable, public Extensible<Packet>
                 allocate();
             }
         }
+        originAddr = addr;
     }
 
     /**
@@ -1328,6 +1332,14 @@ class Packet : public Printable, public Extensible<Packet>
     void setUintX(uint64_t w, ByteOrder endian);
 
     /**
+     * get pointer of data
+     */
+    PacketDataPtr
+    getData()
+    {
+        return data;
+    }
+    /**
      * Copy data into the packet from the provided pointer.
      */
     void
@@ -1376,6 +1388,7 @@ class Packet : public Printable, public Extensible<Packet>
     void
     writeData(uint8_t *p) const
     {
+        // TODO: AM.A: update this to do curect
         if (!isMaskedWrite()) {
             std::memcpy(p, getConstPtr<uint8_t>(), getSize());
         } else {

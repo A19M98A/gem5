@@ -55,7 +55,7 @@ class BaseTags(ClockedObject):
     size = Param.MemorySize(Parent.size, "capacity in bytes")
 
     # Get the block size from the parent (system)
-    block_size = Param.Int(Parent.cache_line_size, "block size in bytes")
+    block_size = Param.Int(Parent.block_size, "block size in bytes")
 
     # Get the tag lookup latency from the parent (cache)
     tag_latency = Param.Cycles(
@@ -79,9 +79,7 @@ class BaseTags(ClockedObject):
     )
 
     # Set the indexing entry size as the block size
-    entry_size = Param.Int(
-        Parent.cache_line_size, "Indexing entry size in bytes"
-    )
+    entry_size = Param.Int(Parent.block_size, "Indexing entry size in bytes")
 
 
 class BaseSetAssoc(BaseTags):
@@ -109,8 +107,11 @@ class SectorTags(BaseTags):
     # Number of sub-sectors (data blocks) per sector
     num_blocks_per_sector = Param.Int(1, "Number of sub-sectors per sector")
 
+    # block Size
+    block_size = Param.Int(Parent.block_size, "block size in bytes")
+
     # The indexing entry now is a sector block
-    entry_size = Parent.cache_line_size * Self.num_blocks_per_sector
+    entry_size = Self.block_size * Self.num_blocks_per_sector
 
     # Get replacement policy from the parent (cache)
     replacement_policy = Param.BaseReplacementPolicy(

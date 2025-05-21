@@ -41,8 +41,11 @@ class BaseIndexingPolicy(SimObject):
     # Get the size from the parent (cache)
     size = Param.MemorySize(Parent.size, "capacity in bytes")
 
+    # Get the block size
+    entry_size = Param.Int(Parent.block_size, "block size in bytes")
+
     # Get the entry size from the parent (tags)
-    entry_size = Param.Int(Parent.entry_size, "entry size in bytes")
+    # entry_size = Param.Int(Parent.entry_size, "entry size in bytes")
 
     # Get the associativity
     assoc = Param.Int(Parent.assoc, "associativity")

@@ -35,7 +35,6 @@
 
 #include <cassert>
 #include <memory>
-#include <string>
 
 #include "base/intmath.hh"
 #include "base/logging.hh"

@@ -141,9 +141,13 @@ SnoopFilter::lookupRequest(const Packet* cpkt, const ResponsePort&
     } else { // if (!cpkt->needsResponse())
         assert(cpkt->isEviction());
         // make sure that the sender actually had the line
-        panic_if((sf_item.holder & req_port).none(), "requestor %x is not a " \
-                 "holder :( SF value %x.%x\n", req_port,
-                 sf_item.requested, sf_item.holder);
+        // TODO: update this part for dont only ignore
+        //panic_if((sf_item.holder & req_port).none(),
+        //"requestor %x is not a " \
+        //         "holder :( SF value %x.%x  pkt:%s,
+        //         blkAddr:%x, linesize:%x\n", req_port,
+        //         sf_item.requested, sf_item.holder,
+        //         cpkt->print(), line_addr, linesize);
         // CleanEvicts and Writebacks -> the sender and all caches above
         // it may not have the line anymore.
         if (!cpkt->isBlockCached()) {

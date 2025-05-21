@@ -73,6 +73,10 @@ class ReplaceableEntry;
 class BaseTags : public ClockedObject
 {
   protected:
+    /**
+     * The flag show run on ReBECA
+     */
+    const bool isReBECA;
     /** The block size of the cache. */
     const unsigned blkSize;
     /** Mask out all bits that aren't part of the block offset. */

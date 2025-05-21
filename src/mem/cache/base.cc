@@ -111,6 +111,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       missCount(p.max_miss_count),
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
       system(p.system),
+      isReBECA(p.isReBECA),
       stats(*this)
 {
     // the MSHR queue has no reserve entries as we check the MSHR
@@ -138,7 +139,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     if (compressor)
         compressor->setCache(this);
 
-    tags->getWayAllocationMax()
+    tags->getWayAllocationMax();
 }
 
 BaseCache::~BaseCache()
@@ -816,6 +817,32 @@ BaseCache::functionalAccess(PacketPtr pkt, bool from_cpu_side)
 }
 
 void
+BaseCache::printDataHex(CacheBlk* blk, const PacketPtr& cpkt)
+{
+    uint8_t* bData = blk->data;
+    uint8_t* pData = cpkt->getData();
+
+    std::cout << "pData: -> ";
+    for (int i = 0; i < cpkt->getSize(); i++) {
+        if (pData[i] < 0x10)
+            printf("0");
+        printf("%x ", pData[i]);
+    }
+    if (cpkt->isWriteback()){
+        std::cout << " -> " << cpkt->print();
+    }
+    std::cout << std::endl;
+    std::cout << "bData: -> ";
+    for (int i = 0; i < blkSize; i++) {
+        if (bData[i] < 0x10)
+            printf("0");
+        printf("%x ", bData[i]);
+    }
+    std::cout << " [" << std::hex << regenerateBlkAddr(blk) << "]";
+    std::cout << std::endl;
+}
+
+void
 BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
     bool has_old_data)
 {
@@ -829,7 +856,30 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
 
     // Actually perform the data update
     if (cpkt) {
-        cpkt->writeDataToBlock(blk->data, blkSize);
+        //std::cout << "befor" << std::endl;
+        //printDataHex(blk, cpkt);
+        if (isReBECA) {
+            const uint8_t* pkt_data_ptr = cpkt->getConstPtr<uint8_t>();
+            size_t pkt_size = cpkt->getSize();
+            Addr pkt_addr = cpkt->getAddr();
+
+            unsigned offset = pkt_addr & (blkSize - 1);
+            if ((offset + pkt_size) > blkSize) {
+                panic("Packet write [%#x:%d] exceeds block" \
+                      "boundary (offset %d, blkSize %d)!",
+                      pkt_addr, pkt_size, offset, blkSize);
+            }
+            uint8_t* blk_data_ptr = blk->data;
+            memcpy(blk_data_ptr + offset,
+                   pkt_data_ptr,
+                   pkt_size);
+            std::cout << "after" << std::endl;
+            printDataHex(blk, cpkt);
+        } else {
+            cpkt->writeDataToBlock(blk->data, blkSize);
+            //std::cout << "after" << std::endl;
+            //printDataHex(blk, cpkt);
+        }
     }
 
     if (ppDataUpdate->hasListeners()) {
@@ -1208,6 +1258,10 @@ BaseCache::satisfyRequest(PacketPtr pkt, CacheBlk *blk, bool, bool)
         assert(pkt->hasRespData());
         std::string pName = name();
         pkt->setDataFromBlock(blk->data, blkSize);
+
+        //std::cout << name() << " -> read " << pkt->print() << std::endl;
+        //printDataHex(blk, pkt);
+
     } else if (pkt->isUpgrade()) {
         // sanity check
         assert(!pkt->hasSharers());
@@ -1372,7 +1426,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->isWriteback()) {
-        assert(blkSize == pkt->getSize());
+        // TODO: AM.A: update this part for suport
+        // difrence block size in l1 and l2
+        if (!isReBECA) {
+            assert(blkSize == pkt->getSize());
+        }
 
         // we could get a clean writeback while we are having
         // outstanding accesses to a block, do the simple thing for
@@ -1532,6 +1590,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (compressor) {
                 lat += compressor->getDecompressionLatency(blk);
             }
+            std::cout << "read:" << std::endl;
+            printDataHex(blk, pkt);
         } else {
             lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
         }

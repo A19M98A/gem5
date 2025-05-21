@@ -380,6 +380,21 @@ tracePacket(System *sys, const char *label, PacketPtr pkt)
 #endif
 
 void
+AbstractMemory::printDataHex(const PacketPtr& cpkt)
+{
+    uint8_t* pData = cpkt->getData();
+
+    std::cout << "pData: -> ";
+    for (int i = 0; i < cpkt->getSize(); i++) {
+        if (pData[i] < 0x10)
+            printf("0");
+        printf("%x ", pData[i]);
+    }
+    std::cout << " [" << std::hex << cpkt->getAddr() << "]";
+    std::cout << std::endl;
+}
+
+void
 AbstractMemory::access(PacketPtr pkt)
 {
     if (pkt->cacheResponding()) {
@@ -457,6 +472,8 @@ AbstractMemory::access(PacketPtr pkt)
         stats.bytesRead[pkt->req->requestorId()] += pkt->getSize();
         if (pkt->req->isInstFetch())
             stats.bytesInstRead[pkt->req->requestorId()] += pkt->getSize();
+        std::cout << "read from memory:" << std::endl;
+        printDataHex(pkt);
     } else if (pkt->isInvalidate() || pkt->isClean()) {
         assert(!pkt->isWrite());
         // in a fastmem system invalidating and/or cleaning packets

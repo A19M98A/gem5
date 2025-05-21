@@ -48,6 +48,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <string>
 
 #include "base/addr_range.hh"
@@ -335,6 +336,11 @@ class BaseCache : public ClockedObject
     MemSidePort memSidePort;
 
   protected:
+
+    /**
+     * The flag show run on ReBECA
+     */
+    const bool isReBECA;
 
     /** Miss status registers */
     MSHRQueue mshrQueue;
@@ -879,6 +885,8 @@ class BaseCache : public ClockedObject
      * Find next request ready time from among possible sources.
      */
     Tick nextQueueReadyTime() const;
+
+    void printDataHex(CacheBlk* blk, const PacketPtr& cpkt);
 
     /** Block size of this cache */
     const unsigned blkSize;

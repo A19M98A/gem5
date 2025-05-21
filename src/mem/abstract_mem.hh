@@ -350,6 +350,8 @@ class AbstractMemory : public ClockedObject
      */
     void access(PacketPtr pkt);
 
+    void printDataHex(const PacketPtr& cpkt);
+
     /**
      * Perform an untimed memory read or write without changing
      * anything but the memory itself. No stats are affected by this

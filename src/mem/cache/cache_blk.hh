@@ -122,6 +122,8 @@ class CacheBlk : public TaggedEntry
 
     uint8_t acc = 0;
 
+    uint32_t offset = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

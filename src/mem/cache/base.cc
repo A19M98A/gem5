@@ -1380,28 +1380,28 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         std::string pName = name();
         if (pName.compare("system.l2") == 0 &&
                 writePointers[blk->getSet()] != blk->getWay()) {
-            std::cout << "invaliding blk, wp: "
-                << writePointers[blk->getSet()];
-            std::cout << ", blk->way: "
-                << blk->getWay() << std::endl;
-            //  invalidateBlock(blk);
-            blk->invalidate();
-            allocateBlock(pkt, writebacks);
-        } else {
-            updateBlockData(blk, pkt, has_old_data);
-            DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
-            incHitCount(pkt, blk);
-
-            writePointers[blk->getSet()] += 3;
-            writePointers[blk->getSet()] %= 8;
-
-            // When the packet metadata arrives, the tag lookup will be
-            // done while the payload is arriving. Then the block will be
-            // ready to access as soon as the fill is done
-            blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
-                std::max(cyclesToTicks(tag_latency),
-                         (uint64_t)pkt->payloadDelay));
+            tags->swapBlock(blk->getSet(),
+                            blk->getWay(),
+                            blk->getSet(),
+                            writePointers[blk->getSet()]);
+            //evictBlock(blk, writebacks);
+            //blk->invalidate();
+            blk = tags->accessBlock(pkt, tag_latency);
         }
+
+        updateBlockData(blk, pkt, has_old_data);
+        DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
+        incHitCount(pkt, blk);
+
+        writePointers[blk->getSet()] += 3;
+        writePointers[blk->getSet()] %= 8;
+
+        // When the packet metadata arrives, the tag lookup will be
+        // done while the payload is arriving. Then the block will be
+        // ready to access as soon as the fill is done
+        blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
+            std::max(cyclesToTicks(tag_latency),
+                    (uint64_t)pkt->payloadDelay));
 
         return true;
     } else if (pkt->cmd == MemCmd::CleanEvict) {
@@ -1666,8 +1666,6 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         int block_set = tags-> extractSet(pkt->getAddr());
         victim = tags->findVictim(addr, is_secure, blk_size_bits,
                                   evict_blks, writePointers[block_set]);
-        std::cout << "wp: " << writePointers[block_set];
-        std::cout << ", victim->way: " << victim->getWay() << std::endl;
         writePointers[block_set] += 3;
         writePointers[block_set] %= maxWay;
     } else {

@@ -110,4 +110,11 @@ BaseIndexingPolicy::getSet(const Addr addr) const
     return (addr >> setShift) & setMask;
 }
 
+void
+BaseIndexingPolicy::swapBlock(int setA, int wayA,
+                              int setB, int wayB)
+{
+    std::swap(sets[setA][wayA], sets[setB][wayB]);
+}
+
 } // namespace gem5

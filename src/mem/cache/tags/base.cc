@@ -305,4 +305,10 @@ BaseTags::BaseTagStats::preDumpStats()
     tags.computeStats();
 }
 
+void BaseTags::swapBlock(int setA, int wayA,
+                   int setB, const int wayB)
+{
+    indexingPolicy->swapBlock(setA, wayA, setB, wayB);
+}
+
 } // namespace gem5

@@ -159,6 +159,8 @@ class BaseIndexingPolicy : public SimObject
      */
     virtual Addr regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
                                                                     const = 0;
+
+    virtual void swapBlock(int setA, int wayA, int setB, int wayB);
 };
 
 } // namespace gem5

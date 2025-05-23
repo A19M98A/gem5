@@ -80,6 +80,7 @@ class BaseTags : public ClockedObject
      * @return The set index for given combination of address and way.
      */
     virtual uint32_t extractSet(const Addr addr) const;
+
   protected:
     /** The block size of the cache. */
     const unsigned blkSize;
@@ -357,6 +358,9 @@ class BaseTags : public ClockedObject
      * @param visitor Visitor to call on each block.
      */
     virtual bool anyBlk(std::function<bool(CacheBlk &)> visitor) = 0;
+
+    virtual void swapBlock(int setA, int wayA,
+                   int setB, int wayB);
 
   private:
     /**

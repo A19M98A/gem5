@@ -530,6 +530,7 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // request and get the data to supply it to other snoopers in the case
         // where the determination the StoreCond fails is delayed due to
         // all caches not being on the same local bus.
+        // TODO: AM.A: Add handel for l1Writeback on miss block!
         cmd = MemCmd::SCUpgradeFailReq;
     } else {
         // block is invalid

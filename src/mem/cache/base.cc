@@ -873,6 +873,7 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
             memcpy(blk_data_ptr + offset,
                    pkt_data_ptr,
                    pkt_size);
+            blk->offset = 0x70 & cpkt->getAddr();
             std::cout << "after" << std::endl;
             printDataHex(blk, cpkt);
         } else {
@@ -1590,7 +1591,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (compressor) {
                 lat += compressor->getDecompressionLatency(blk);
             }
-            std::cout << "read:" << std::endl;
+            std::cout << "offset:" << std::hex << blk->offset <<
+                         ", read:" << std::endl;
             printDataHex(blk, pkt);
         } else {
             lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);

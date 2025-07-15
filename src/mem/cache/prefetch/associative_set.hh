@@ -105,7 +105,7 @@ class AssociativeSet
      * @result vector of candidates matching with the provided key
      */
     std::vector<Entry *> getPossibleEntries(const Addr addr,
-                                            const uint8_t type = 0) const;
+                                            const uint8_t type = 4) const;
 
     /**
      * Indicate that an entry has just been inserted

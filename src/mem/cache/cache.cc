@@ -519,10 +519,12 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // copies
         cmd = MemCmd::InvalidateReq;
     } else if (blkValid && useUpgrades) {
-        // only reason to be here is that blk is read only and we need
-        // it to be writable
-        assert(needsWritable);
-        assert(!blk->isSet(CacheBlk::WritableBit));
+        if (needsWritable and !blk->isSet(CacheBlk::WritableBit)) {
+            // only reason to be here is that blk is read only and we need
+            // it to be writable
+            assert(needsWritable);
+            assert(!blk->isSet(CacheBlk::WritableBit));
+        }
         cmd = cpu_pkt->isLLSC() ? MemCmd::SCUpgradeReq : MemCmd::UpgradeReq;
     } else if (cpu_pkt->cmd == MemCmd::SCUpgradeFailReq ||
                cpu_pkt->cmd == MemCmd::StoreCondFailReq) {
@@ -530,7 +532,6 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
         // request and get the data to supply it to other snoopers in the case
         // where the determination the StoreCond fails is delayed due to
         // all caches not being on the same local bus.
-        // TODO: AM.A: Add handel for l1Writeback on miss block!
         cmd = MemCmd::SCUpgradeFailReq;
     } else {
         // block is invalid

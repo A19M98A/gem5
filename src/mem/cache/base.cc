@@ -832,14 +832,14 @@ BaseCache::printDataHex(CacheBlk* blk, const PacketPtr& cpkt)
         std::cout << " -> " << cpkt->print();
     }
     std::cout << std::endl;
-    std::cout << "bData: -> ";
-    for (int i = 0; i < blkSize; i++) {
-        if (bData[i] < 0x10)
-            printf("0");
-        printf("%x ", bData[i]);
-    }
-    std::cout << " [" << std::hex << regenerateBlkAddr(blk) << "]";
-    std::cout << std::endl;
+    // std::cout << "bData: -> ";
+    // for (int i = 0; i < blkSize; i++) {
+    //     if (bData[i] < 0x10)
+    //         printf("0");
+    //     printf("%x ", bData[i]);
+    // }
+    // std::cout << " [" << std::hex << regenerateBlkAddr(blk) << "]";
+    // std::cout << std::endl;
 }
 
 void
@@ -856,8 +856,6 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
 
     // Actually perform the data update
     if (cpkt) {
-        //std::cout << "befor" << std::endl;
-        //printDataHex(blk, cpkt);
         if (isReBECA) {
             const uint8_t* pkt_data_ptr = cpkt->getConstPtr<uint8_t>();
             size_t pkt_size = cpkt->getSize();
@@ -873,13 +871,8 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
             memcpy(blk_data_ptr + offset,
                    pkt_data_ptr,
                    pkt_size);
-            blk->offset = 0x70 & cpkt->getAddr();
-            std::cout << "after" << std::endl;
-            printDataHex(blk, cpkt);
         } else {
             cpkt->writeDataToBlock(blk->data, blkSize);
-            //std::cout << "after" << std::endl;
-            //printDataHex(blk, cpkt);
         }
     }
 
@@ -1259,10 +1252,6 @@ BaseCache::satisfyRequest(PacketPtr pkt, CacheBlk *blk, bool, bool)
         assert(pkt->hasRespData());
         std::string pName = name();
         pkt->setDataFromBlock(blk->data, blkSize);
-
-        //std::cout << name() << " -> read " << pkt->print() << std::endl;
-        //printDataHex(blk, pkt);
-
     } else if (pkt->isUpgrade()) {
         // sanity check
         assert(!pkt->hasSharers());
@@ -1422,6 +1411,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+
+        std::cout << name() << " -> write pkt:" << pkt->print() << std::endl;
+        printDataHex(blk, pkt);
     }
 
     // Writeback handling is special case.  We can write the block into
@@ -1584,6 +1576,17 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
+            int area = blk->getWay() / 4;
+            if (isReBECA && blk->offset !=
+                    ((pkt->getAddr() >> (4 + area)) & 7)) {
+                std::cout << name() << " -> cant read! pkt:" << pkt->print();
+                std::cout << std::endl;
+                printDataHex(blk, pkt);
+                return false;
+            }
+            std::cout << name() << " -> read pkt:" << pkt->print();
+            std::cout << std::endl;
+            printDataHex(blk, pkt);
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
 
             // When a block is compressed, it must first be decompressed
@@ -1591,9 +1594,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (compressor) {
                 lat += compressor->getDecompressionLatency(blk);
             }
-            std::cout << "offset:" << std::hex << blk->offset <<
-                         ", read:" << std::endl;
-            printDataHex(blk, pkt);
+
         } else {
             lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
         }
@@ -1758,7 +1759,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     // Find replacement victim
     std::vector<CacheBlk*> evict_blks;
     CacheBlk *victim = tags->findVictim(addr, is_secure, blk_size_bits,
-                                        evict_blks, pkt->getDestination() + 1);
+                                        evict_blks, pkt->getDestination());
 
     // It is valid to return nullptr if there is no victim
     if (!victim)
@@ -1781,6 +1782,9 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setSizeBits(victim, blk_size_bits);
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
+
+    // base of block address and size set the offset
+    victim->offset = ((pkt->getAddr() >> 4) & 7) >> pkt->getDestination();
 
     return victim;
 }
@@ -1813,7 +1817,13 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
         // TODO: Add action for update history.
 
     }
+
     PacketPtr pkt = evictBlock(blk);
+
+    if (pkt->isWriteback()) {
+        pkt->setDestination(0);
+    }
+
     if (pkt) {
         writebacks.push_back(pkt);
     }

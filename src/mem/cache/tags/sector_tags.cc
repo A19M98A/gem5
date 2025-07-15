@@ -259,7 +259,7 @@ SectorTags::findBlock(Addr addr, Addr originAddr, bool is_secure) const
 
     // Find all possible sector entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr, 0);
+        indexingPolicy->getPossibleEntries(addr, 4);
 
     // Search for block
     for (const auto& sector : entries) {

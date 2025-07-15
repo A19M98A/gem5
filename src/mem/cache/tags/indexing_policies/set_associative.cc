@@ -76,11 +76,11 @@ SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
 std::vector<ReplaceableEntry*>
 SetAssociative::getPossibleEntries(const Addr addr, const uint8_t type) const
 {
-    if (type != 0 && isReBECA) {
+    if (type != 4 && isReBECA) {
         std::vector<ReplaceableEntry*> sector_entries;
         for (const auto& blk : sets[extractSet(addr)]) {
-            if ((blk->getWay() + 4)/4 == type) {
-                    sector_entries.push_back(blk);
+            if (blk->getWay()/4 == type) {
+                sector_entries.push_back(blk);
             }
         }
         return sector_entries;

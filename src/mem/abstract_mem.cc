@@ -456,8 +456,8 @@ AbstractMemory::access(PacketPtr pkt)
     } else if (pkt->isRead()) {
         assert(!pkt->isWrite());
         pkt->setHistory(pmemHisAddr[pkt->getAddr()]);
-        pkt->setDestination((pkt->getHistory() >>
-                            (((pkt->getOriginAddr() >> 5) & 7) << 1)) & 3);
+        pkt->setDestination(3 - ((pkt->getHistory() >>
+                            (((pkt->getOriginAddr() >> 5) & 7) << 1)) & 3));
         if (pkt->isLLSC()) {
             assert(!pkt->fromCache());
             // if the packet is not coming from a cache then we have
@@ -472,7 +472,9 @@ AbstractMemory::access(PacketPtr pkt)
         stats.bytesRead[pkt->req->requestorId()] += pkt->getSize();
         if (pkt->req->isInstFetch())
             stats.bytesInstRead[pkt->req->requestorId()] += pkt->getSize();
-        std::cout << "read from memory:" << std::endl;
+        std::cout << "read from memory:" << pkt->print();
+        std::cout << ", destination:" << int(pkt->getDestination());
+        std::cout << std::endl;
         printDataHex(pkt);
     } else if (pkt->isInvalidate() || pkt->isClean()) {
         assert(!pkt->isWrite());

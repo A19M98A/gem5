@@ -409,16 +409,8 @@ void
 BaseCache::recvTimingReq(PacketPtr pkt)
 {
     std::string pName = name();
-    if (pName.compare("system.cpu.dcache") == 0 ||
-        pName.compare("system.cpu0.dcache") == 0 ||
-        pName.compare("system.cpu1.dcache") == 0 ||
-        pName.compare("system.cpu2.dcache") == 0 ||
-        pName.compare("system.cpu3.dcache") == 0 ||
-        pName.compare("system.cpu.icache") == 0 ||
-        pName.compare("system.cpu0.icache") == 0 ||
-        pName.compare("system.cpu1.icache") == 0 ||
-        pName.compare("system.cpu2.icache") == 0 ||
-        pName.compare("system.cpu3.icache") == 0) {
+
+    if (pkt->fromCache()) {
             pkt->setOriginAddr(pkt->getAddr());
     } else {
         CacheBlk *blk = tags->findBlock(pkt->getAddr(),
@@ -821,25 +813,35 @@ BaseCache::printDataHex(CacheBlk* blk, const PacketPtr& cpkt)
 {
     uint8_t* bData = blk->data;
     uint8_t* pData = cpkt->getData();
+    uint64_t offset = cpkt->getAddr() & 0x7f;
+    int alpha = offset * 3;
+
+    std::cout << "bData: -> ";
+    for (int i = 0; i < blkSize; i++) {
+        if (bData[i] < 0x10)
+            printf("0");
+        printf("%x ", bData[i]);
+    }
+    std::cout << " [" << std::hex << regenerateBlkAddr(blk) << "]";
+    std::cout << std::endl;
+
+    std::cout << name() << " read pkt:" << cpkt->print() << std::endl;
 
     std::cout << "pData: -> ";
+
+    for (int i = 0; i < alpha; i++) {
+        std::cout << " ";
+    }
+
+    std::cout << "\033[32m";
     for (int i = 0; i < cpkt->getSize(); i++) {
         if (pData[i] < 0x10)
             printf("0");
         printf("%x ", pData[i]);
     }
-    if (cpkt->isWriteback()){
-        std::cout << " -> " << cpkt->print();
-    }
+    std::cout << "\033[m, pkt:" << cpkt->print();
+    std::cout << ", size:" << cpkt->getSize();
     std::cout << std::endl;
-    // std::cout << "bData: -> ";
-    // for (int i = 0; i < blkSize; i++) {
-    //     if (bData[i] < 0x10)
-    //         printf("0");
-    //     printf("%x ", bData[i]);
-    // }
-    // std::cout << " [" << std::hex << regenerateBlkAddr(blk) << "]";
-    // std::cout << std::endl;
 }
 
 void
@@ -1412,8 +1414,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (pkt->isWrite()) {
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
 
-        std::cout << name() << " -> write pkt:" << pkt->print() << std::endl;
-        printDataHex(blk, pkt);
+        //printDataHex(blk, pkt);
     }
 
     // Writeback handling is special case.  We can write the block into
@@ -1576,17 +1577,14 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
-            int area = blk->getWay() / 4;
             if (isReBECA && blk->offset !=
-                    ((pkt->getAddr() >> (4 + area)) & 7)) {
-                std::cout << name() << " -> cant read! pkt:" << pkt->print();
-                std::cout << std::endl;
-                printDataHex(blk, pkt);
+                    ((pkt->getAddr() & 0x70) >> (4 + blk->getWay()))) {
                 return false;
             }
-            std::cout << name() << " -> read pkt:" << pkt->print();
-            std::cout << std::endl;
-            printDataHex(blk, pkt);
+            std::string pName = name();
+            if (pName.compare("system.l2") == 0) {
+                printDataHex(blk, pkt);
+            }
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
 
             // When a block is compressed, it must first be decompressed
@@ -1784,7 +1782,16 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     }
 
     // base of block address and size set the offset
-    victim->offset = ((pkt->getAddr() >> 4) & 7) >> pkt->getDestination();
+    // victim->offset = ((pkt->getAddr() >> 4) & 7) >> pkt->getDestination();
+    victim->offset = (pkt->getAddr() & 0x70) >> (4 + victim->getWay());
+
+    std::string pName = name();
+    if (pName.compare("system.l2222") == 0) {
+        std::cout << name() << " -> allocate block by offset:";
+        std::cout << victim->offset;
+        std::cout << ", victim:" << victim->print() << std::endl;
+        std::cout << "pkt:" << pkt->print() << std::endl;
+    }
 
     return victim;
 }
@@ -1813,7 +1820,7 @@ void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
     std::string pName = name();
-    if (pName.compare("system.l2")) {
+    if (pName.compare("system.l2") == 0) {
         // TODO: Add action for update history.
 
     }
@@ -1821,7 +1828,7 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     PacketPtr pkt = evictBlock(blk);
 
     if (pkt->isWriteback()) {
-        pkt->setDestination(0);
+        pkt->setDestination(4);
     }
 
     if (pkt) {

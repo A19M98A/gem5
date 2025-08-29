@@ -1371,14 +1371,16 @@ class Packet : public Printable, public Extensible<Packet>
      *               ^
      *               |
      * point to blk *q
+     * NOTE:
+     * !!! dont need this cuse the L1 size is equal 16 !!!
      */
     void
     setDataFromBlock(const uint8_t *blk_data, int blkSize)
     {
-        if (cacheResponding())
-            setData(blk_data + (((blkSize - 1) - (size - 1)) & originAddr));
-        else
-            setData(blk_data + getOffset(blkSize));
+        //if (cacheResponding())
+        //    setData(blk_data + (offset << 4));
+        //else
+        setData(blk_data + getOffset(blkSize));
     }
 
     /**

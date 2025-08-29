@@ -457,7 +457,7 @@ AbstractMemory::access(PacketPtr pkt)
         assert(!pkt->isWrite());
         pkt->setHistory(pmemHisAddr[pkt->getAddr()]);
         pkt->setDestination(3 - ((pkt->getHistory() >>
-                            (((pkt->getOriginAddr() >> 5) & 7) << 1)) & 3));
+                            (((pkt->getOriginAddr() >> 4) & 7) << 1)) & 3));
         if (pkt->isLLSC()) {
             assert(!pkt->fromCache());
             // if the packet is not coming from a cache then we have
@@ -472,10 +472,10 @@ AbstractMemory::access(PacketPtr pkt)
         stats.bytesRead[pkt->req->requestorId()] += pkt->getSize();
         if (pkt->req->isInstFetch())
             stats.bytesInstRead[pkt->req->requestorId()] += pkt->getSize();
-        std::cout << "read from memory:" << pkt->print();
-        std::cout << ", destination:" << int(pkt->getDestination());
-        std::cout << std::endl;
-        printDataHex(pkt);
+        // std::cout << "read from memory:" << pkt->print();
+        // std::cout << ", destination:" << int(pkt->getDestination());
+        // std::cout << std::endl;
+        // printDataHex(pkt);
     } else if (pkt->isInvalidate() || pkt->isClean()) {
         assert(!pkt->isWrite());
         // in a fastmem system invalidating and/or cleaning packets
